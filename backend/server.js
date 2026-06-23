@@ -1,12 +1,17 @@
-require("dotenv").config();
+const express = require('express');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const connectDB = require('./config/db');
 
-const express = require("express");
-const connectDB = require("./config/db");
-
-const app = express();
-
+dotenv.config();
 connectDB();
 
-app.listen(5000, () => {
-    console.log("Server started on port 5000");
-});
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+
+
+app.get('/', (req, res) => res.send('API running'));
+
+app.listen(5000, () => console.log('Server on port 5000'));
