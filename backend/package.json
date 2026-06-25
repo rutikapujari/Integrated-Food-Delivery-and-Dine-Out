@@ -13,17 +13,24 @@
     "aws-sdk": "^2.1693.0",
     "axios": "^1.18.1",
     "bcryptjs": "^3.0.3",
+    "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-validator": "^7.3.2",
+    "geolib": "^3.3.14",
+    "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.3.0",
     "mongoose": "^9.7.2",
+    "morgan": "^1.11.0",
     "multer": "^2.2.0",
+    "multer-s3": "^3.0.1",
+    "nodemailer": "^9.0.1",
     "react-router-dom": "^7.18.0",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "stripe": "^22.3.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
