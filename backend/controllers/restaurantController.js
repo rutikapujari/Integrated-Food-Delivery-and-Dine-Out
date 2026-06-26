@@ -16,11 +16,12 @@ const createRestaurant = async (req, res) => {
       openHours,
       isOpen,
       coordinates,
+      ownerId,
     } = req.body;
 
     const restaurant = await Restaurant.create({
       name,
-      ownerId: req.user.id,
+      ownerId: req.user?.id || ownerId,
       cuisine,
       description,
       address,

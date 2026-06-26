@@ -15,8 +15,10 @@ const auth = require("../middleware/auth");
 router.get("/", getRestaurants);
 router.get("/:id", getRestaurantById);
 
+// Create route is public for easy API testing.
+router.post("/", createRestaurant);
+
 // Protected Routes
-router.post("/", auth, createRestaurant);
 router.put("/:id", auth, updateRestaurant);
 router.delete("/:id", auth, deleteRestaurant);
 
