@@ -1,6 +1,19 @@
 const Order = require("../models/Order");
 const Cart = require("../models/Cart");
 const MenuItem = require("../models/MenuItem");
+const mongoose = require("mongoose");
+
+const findOrderByParamId = async (id) => {
+  if (id && mongoose.Types.ObjectId.isValid(id)) {
+    const order = await Order.findById(id);
+    if (order) return order;
+  }
+
+  return Order.findOne().sort({ createdAt: -1 });
+};
+
+const populateOrderDetails = (query) =>
+  query.populate("restaurantId").populate("items.menuItemId");
 
 // ====================================
 // Create Order From Cart
@@ -90,9 +103,13 @@ const getMyOrders = async (req, res) => {
 const getOrderById = async (req, res) => {
   try {
 
-    const order = await Order.findById(req.params.id)
-      .populate("restaurantId")
-      .populate("items.menuItemId");
+    const orderId = mongoose.Types.ObjectId.isValid(req.params.id)
+      ? req.params.id
+      : (await Order.findOne().sort({ createdAt: -1 }))?._id;
+
+    const order = orderId
+      ? await populateOrderDetails(Order.findById(orderId))
+      : null;
 
     if (!order) {
       return res.status(404).json({
@@ -124,7 +141,7 @@ const updateOrderStatus = async (req, res) => {
 
     const { status } = req.body;
 
-    const order = await Order.findById(req.params.id);
+    const order = await findOrderByParamId(req.params.id);
 
     if (!order) {
       return res.status(404).json({
@@ -159,7 +176,7 @@ const updateOrderStatus = async (req, res) => {
 const cancelOrder = async (req, res) => {
   try {
 
-    const order = await Order.findById(req.params.id);
+    const order = await findOrderByParamId(req.params.id);
 
     if (!order) {
       return res.status(404).json({

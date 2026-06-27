@@ -4,7 +4,6 @@ const cors = require("cors");
 const path = require("path");
 
 const connectDB = require("./config/db");
-const orderRoutes = require("./routes/orderRoutes");
 
 dotenv.config({ path: path.join(__dirname, ".env") });
 
@@ -22,6 +21,8 @@ app.use("/api/restaurants", require("./routes/restaurantRoutes"));
 app.use("/api/menu", require("./routes/menuRoutes"));
 app.use("/api/cart", require("./routes/cart"));
 app.use("/api/orders", require("./routes/orderRoutes"));
+app.use("/api/reservations", require("./routes/reservation"));
+app.use("/api/reviews", require("./routes/review"));
 // Home Route
 app.get("/", (req, res) => {
   res.send("Food Delivery API is Running...");
