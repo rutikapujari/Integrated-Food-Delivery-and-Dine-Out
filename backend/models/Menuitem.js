@@ -1,37 +1,50 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const menuItemSchema = new mongoose.Schema({
-  restaurantId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Restaurant',
-    required: true
+const menuItemSchema = new mongoose.Schema(
+  {
+    restaurantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Restaurant",
+      required: [true, "Restaurant ID is required"],
+    },
+
+    name: {
+      type: String,
+      required: [true, "Menu item name is required"],
+      trim: true,
+    },
+
+    description: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    category: {
+      type: String,
+      required: [true, "Category is required"],
+      trim: true,
+    },
+
+    price: {
+      type: Number,
+      required: [true, "Price is required"],
+      min: 0,
+    },
+
+    image: {
+      type: String,
+      default: "",
+    },
+
+    isAvailable: {
+      type: Boolean,
+      default: true,
+    },
   },
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  price: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  category: {
-    type: String,
-    required: true    // e.g. "Starter", "Main Course", "Dessert", "Drinks"
-  },
-  image: {
-    type: String,     // AWS S3 URL — uploaded via multer-s3
-    default: ''
-  },
-  isAvailable: {
-    type: Boolean,
-    default: true     // owner can mark items out of stock
-  },
-  description: {
-    type: String,
-    default: ''
+  {
+    timestamps: true,
   }
-}, { timestamps: true });
+);
 
-module.exports = mongoose.model('MenuItem', menuItemSchema);
+module.exports = mongoose.model("MenuItem", menuItemSchema);

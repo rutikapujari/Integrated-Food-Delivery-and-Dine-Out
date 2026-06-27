@@ -18,7 +18,8 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/restaurants", require("./routes/restaurantRoutes"));
-
+app.use("/api/menu", require("./routes/menuRoutes"));
+app.use("/api/cart", require("./routes/cart"));
 // Home Route
 app.get("/", (req, res) => {
   res.send("Food Delivery API is Running...");

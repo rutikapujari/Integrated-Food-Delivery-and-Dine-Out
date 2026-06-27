@@ -3,16 +3,19 @@ const User = require('../models/User');
 
 const auth = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const authHeader = req.headers.authorization || '';
+    const token =
+      authHeader.startsWith('Bearer ')
+        ? authHeader.split(' ')[1]
+        : authHeader || req.headers['x-auth-token'];
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'Not authorized, token missing'
+        message: 'Not authorized, token missing. Send token in Authorization: Bearer <token>'
       });
     }
 
-    const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     req.user = await User.findById(decoded.id).select('-password');
