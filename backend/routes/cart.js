@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const auth = require("../middleware/auth");
 
 const {
   addToCart,
@@ -8,6 +9,8 @@ const {
   removeCartItem,
   clearCart,
 } = require("../controllers/cart_controller");
+
+router.use(auth);
 
 // Add item to cart
 router.post("/add", addToCart);

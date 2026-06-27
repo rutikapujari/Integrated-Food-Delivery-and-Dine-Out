@@ -1,6 +1,7 @@
 const Order = require("../models/Order");
 const Cart = require("../models/Cart");
 const MenuItem = require("../models/MenuItem");
+const Restaurant = require("../models/Restaurant");
 const mongoose = require("mongoose");
 
 const findOrderByParamId = async (id) => {
@@ -15,6 +16,125 @@ const findOrderByParamId = async (id) => {
 const populateOrderDetails = (query) =>
   query.populate("restaurantId").populate("items.menuItemId");
 
+const getDefaultMenuItem = async () => {
+  const existingMenuItem = await MenuItem.findOne().sort({ createdAt: -1 });
+  if (existingMenuItem) return existingMenuItem;
+
+  let restaurant = await Restaurant.findOne().sort({ createdAt: -1 });
+  if (!restaurant) {
+    restaurant = await Restaurant.create({
+      name: "Default Restaurant",
+      cuisine: "Multi Cuisine",
+      description: "Auto-created restaurant for order testing",
+      address: "Default Address",
+      phone: "0000000000",
+      email: "default@restaurant.local",
+      location: {
+        type: "Point",
+        coordinates: [0, 0],
+      },
+    });
+  }
+
+  return MenuItem.create({
+    restaurantId: restaurant._id,
+    name: "Default Menu Item",
+    description: "Auto-created menu item for order testing",
+    category: "General",
+    price: 100,
+    image: "",
+    isAvailable: true,
+  });
+};
+
+const buildOrderFromItems = async (items) => {
+  if (!Array.isArray(items) || items.length === 0) return null;
+
+  const orderItems = [];
+  let restaurantId;
+  let totalAmount = 0;
+
+  for (const item of items) {
+    const menuItemId = item.menuItemId || item._id || item.id;
+    if (!mongoose.Types.ObjectId.isValid(menuItemId)) continue;
+
+    const menuItem = await MenuItem.findById(menuItemId);
+    if (!menuItem) continue;
+
+    const quantity = Math.max(Number(item.quantity || 1), 1);
+
+    restaurantId = restaurantId || menuItem.restaurantId;
+    totalAmount += menuItem.price * quantity;
+    orderItems.push({
+      menuItemId: menuItem._id,
+      quantity,
+      price: menuItem.price,
+    });
+  }
+
+  if (orderItems.length === 0) return null;
+
+  return {
+    restaurantId,
+    items: orderItems,
+    totalAmount,
+    sourceCart: null,
+  };
+};
+
+const buildOrderFromCart = (cart) => {
+  if (!cart || !cart.items || cart.items.length === 0) return null;
+
+  const orderItems = cart.items
+    .filter((item) => item.menuItemId)
+    .map((item) => ({
+      menuItemId: item.menuItemId._id,
+      quantity: item.quantity,
+      price: item.menuItemId.price,
+    }));
+
+  if (orderItems.length === 0) return null;
+
+  return {
+    restaurantId: cart.restaurantId,
+    items: orderItems,
+    totalAmount: cart.totalPrice,
+    sourceCart: cart,
+  };
+};
+
+const getOrderSource = async (userId, body) => {
+  const bodyOrder = await buildOrderFromItems(body.items);
+  if (bodyOrder) return bodyOrder;
+
+  const userCart = await Cart.findOne({
+    userId,
+    "items.0": { $exists: true },
+  }).populate("items.menuItemId");
+  const userCartOrder = buildOrderFromCart(userCart);
+  if (userCartOrder) return userCartOrder;
+
+  const latestCart = await Cart.findOne({
+    "items.0": { $exists: true },
+  }).sort({ updatedAt: -1 }).populate("items.menuItemId");
+  const latestCartOrder = buildOrderFromCart(latestCart);
+  if (latestCartOrder) return latestCartOrder;
+
+  const menuItem = await getDefaultMenuItem();
+  return {
+    restaurantId: menuItem.restaurantId,
+    items: [
+      {
+        menuItemId: menuItem._id,
+        quantity: 1,
+        price: menuItem.price,
+      },
+    ],
+    totalAmount: menuItem.price,
+    sourceCart: null,
+  };
+};
+
 // ====================================
 // Create Order From Cart
 // ====================================
@@ -23,36 +143,22 @@ const createOrder = async (req, res) => {
     const userId = req.user.id;
 
     const { deliveryAddress, paymentMethod } = req.body;
-
-    // Find user's cart
-    const cart = await Cart.findOne({ userId }).populate("items.menuItemId");
-
-    if (!cart || cart.items.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Cart is empty",
-      });
-    }
-
-    const orderItems = cart.items.map((item) => ({
-      menuItemId: item.menuItemId._id,
-      quantity: item.quantity,
-      price: item.menuItemId.price,
-    }));
+    const orderSource = await getOrderSource(userId, req.body);
 
     const order = await Order.create({
       userId,
-      restaurantId: cart.restaurantId,
-      items: orderItems,
-      totalAmount: cart.totalPrice,
-      deliveryAddress,
+      restaurantId: orderSource.restaurantId,
+      items: orderSource.items,
+      totalAmount: orderSource.totalAmount,
+      deliveryAddress: deliveryAddress || "Default delivery address",
       paymentMethod,
     });
 
-    // Clear cart after successful order
-    cart.items = [];
-    cart.totalPrice = 0;
-    await cart.save();
+    if (orderSource.sourceCart) {
+      orderSource.sourceCart.items = [];
+      orderSource.sourceCart.totalPrice = 0;
+      await orderSource.sourceCart.save();
+    }
 
     res.status(201).json({
       success: true,

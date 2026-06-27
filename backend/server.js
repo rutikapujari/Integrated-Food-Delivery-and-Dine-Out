@@ -3,9 +3,10 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const path = require("path");
 
-const connectDB = require("./config/db");
-
 dotenv.config({ path: path.join(__dirname, ".env") });
+
+const paymentRoutes = require("./routes/paymentRoutes");
+const connectDB = require("./config/db");
 
 connectDB();
 
@@ -23,6 +24,7 @@ app.use("/api/cart", require("./routes/cart"));
 app.use("/api/orders", require("./routes/orderRoutes"));
 app.use("/api/reservations", require("./routes/reservation"));
 app.use("/api/reviews", require("./routes/review"));
+app.use("/api/payments", paymentRoutes);
 // Home Route
 app.get("/", (req, res) => {
   res.send("Food Delivery API is Running...");
