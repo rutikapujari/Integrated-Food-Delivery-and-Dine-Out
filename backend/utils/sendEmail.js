@@ -11,7 +11,7 @@ const getEmailConfig = () => {
     return { user, pass };
 };
 
-const sendEmail = async (email, subject, html) => {
+const sendEmail = async (to, subject, text) => {
     const { user, pass } = getEmailConfig();
 
     const transporter = nodemailer.createTransport({
@@ -22,12 +22,15 @@ const sendEmail = async (email, subject, html) => {
         }
     });
 
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
         from: `"Food Delivery" <${user}>`,
-        to: email,
+        to,
         subject,
-        html
+        text
     });
+
+    console.log("Email sent:", info.messageId);
+    return info;
 };
 
 module.exports = sendEmail;
