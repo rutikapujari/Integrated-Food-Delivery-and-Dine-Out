@@ -27,6 +27,8 @@ const createRefreshToken = async (user) => {
   return refreshToken;
 };
 
+const isEmailConfigured = () => Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password, role, address, location } = req.body;
@@ -50,24 +52,28 @@ router.post('/register', async (req, res) => {
       address,
       location,
       emailToken,
-      isVerified: false
+      isVerified: isEmailConfigured() ? false : true
     });
 
     const verifyUrl = `http://localhost:3000/api/auth/verify/${emailToken}`;
 
-    await sendEmail(
-      user.email,
-      'Verify Email',
-      `
-        <h2>Verify Account</h2>
-        <p>Click the link below to verify your account.</p>
-        <a href="${verifyUrl}">Verify</a>
-      `
-    );
+    if (isEmailConfigured()) {
+      await sendEmail(
+        user.email,
+        'Verify Email',
+        `
+          <h2>Verify Account</h2>
+          <p>Click the link below to verify your account.</p>
+          <a href="${verifyUrl}">Verify</a>
+        `
+      );
+    } else {
+      console.warn('EMAIL_USER and EMAIL_PASS are not set. Skipping verification email.');
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Check email to verify'
+      message: isEmailConfigured() ? 'Check email to verify' : 'User registered successfully'
     });
   } catch (error) {
     res.status(500).json({
@@ -227,21 +233,26 @@ router.post('/forgot', async (req, res) => {
 
     await user.save();
 
-    const resetUrl = `http://localhost:3000/reset/${token}`;
+    const resetUrl = `http://localhost:3000/api/auth/reset/${token}`;
 
-    await sendEmail(
-      user.email,
-      'Reset Password',
-      `
-        <h2>Reset Password</h2>
-        <p>Click the link below to reset your password. This link expires in 1 hour.</p>
-        <a href="${resetUrl}">Reset Password</a>
-      `
-    );
+    if (isEmailConfigured()) {
+      await sendEmail(
+        user.email,
+        'Reset Password',
+        `
+          <h2>Reset Password</h2>
+          <p>Click the link below to reset your password. This link expires in 1 hour.</p>
+          <a href="${resetUrl}">Reset Password</a>
+        `
+      );
+    } else {
+      console.warn('EMAIL_USER and EMAIL_PASS are not set. Skipping reset email.');
+    }
 
     res.status(200).json({
       success: true,
-      message: 'Reset email sent'
+      message: isEmailConfigured() ? 'Reset email sent' : 'Password reset link generated',
+      resetUrl
     });
   } catch (error) {
     res.status(500).json({
@@ -249,6 +260,119 @@ router.post('/forgot', async (req, res) => {
       message: error.message
     });
   }
+});
+
+router.post('/reset', (req, res) => {
+  res.status(400).json({
+    success: false,
+    message: 'Reset token is required. Use POST /api/auth/forgot first, then call POST /api/auth/reset/:token with the token.'
+  });
+});
+
+router.get('/reset/:token', (req, res) => {
+  const token = req.params.token;
+
+  res.type('html').send(`
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Reset Password</title>
+        <style>
+          body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #111827;
+          }
+
+          main {
+            width: min(420px, calc(100vw - 32px));
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+          }
+
+          h1 {
+            margin: 0 0 16px;
+            font-size: 22px;
+          }
+
+          label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+          }
+
+          input {
+            box-sizing: border-box;
+            width: 100%;
+            height: 42px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 0 12px;
+            font-size: 15px;
+          }
+
+          button {
+            width: 100%;
+            height: 42px;
+            margin-top: 16px;
+            border: 0;
+            border-radius: 6px;
+            background: #2563eb;
+            color: white;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+          }
+
+          p {
+            min-height: 20px;
+            margin: 14px 0 0;
+            font-size: 14px;
+          }
+        </style>
+      </head>
+      <body>
+        <main>
+          <h1>Reset Password</h1>
+          <form id="reset-form">
+            <label for="password">New password</label>
+            <input id="password" name="password" type="password" minlength="6" required />
+            <button type="submit">Update Password</button>
+            <p id="message"></p>
+          </form>
+        </main>
+        <script>
+          const form = document.getElementById('reset-form');
+          const message = document.getElementById('message');
+
+          form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            message.textContent = 'Updating password...';
+
+            const response = await fetch('/api/auth/reset/${token}', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ password: form.password.value })
+            });
+            const data = await response.json();
+
+            message.textContent = data.message || (data.success ? 'Password updated' : 'Unable to reset password');
+            message.style.color = data.success ? '#047857' : '#b91c1c';
+          });
+        </script>
+      </body>
+    </html>
+  `);
 });
 
 router.post('/reset/:token', async (req, res) => {
@@ -272,7 +396,7 @@ router.post('/reset/:token', async (req, res) => {
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: 'Token expired'
+        message: 'Invalid or expired reset token. Generate a new reset link using POST /api/auth/forgot.'
       });
     }
 
