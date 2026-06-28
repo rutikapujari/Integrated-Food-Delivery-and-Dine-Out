@@ -1,7 +1,6 @@
 const Order = require("../models/Order");
 const Cart = require("../models/Cart");
-const MenuItem = require("../models/MenuItem");
-const Restaurant = require("../models/Restaurant");
+const MenuItem = require("../models/Menuitem");
 const mongoose = require("mongoose");
 
 const findOrderByParamId = async (id) => {
@@ -15,37 +14,6 @@ const findOrderByParamId = async (id) => {
 
 const populateOrderDetails = (query) =>
   query.populate("restaurantId").populate("items.menuItemId");
-
-const getDefaultMenuItem = async () => {
-  const existingMenuItem = await MenuItem.findOne().sort({ createdAt: -1 });
-  if (existingMenuItem) return existingMenuItem;
-
-  let restaurant = await Restaurant.findOne().sort({ createdAt: -1 });
-  if (!restaurant) {
-    restaurant = await Restaurant.create({
-      name: "Default Restaurant",
-      cuisine: "Multi Cuisine",
-      description: "Auto-created restaurant for order testing",
-      address: "Default Address",
-      phone: "0000000000",
-      email: "default@restaurant.local",
-      location: {
-        type: "Point",
-        coordinates: [0, 0],
-      },
-    });
-  }
-
-  return MenuItem.create({
-    restaurantId: restaurant._id,
-    name: "Default Menu Item",
-    description: "Auto-created menu item for order testing",
-    category: "General",
-    price: 100,
-    image: "",
-    isAvailable: true,
-  });
-};
 
 const buildOrderFromItems = async (items) => {
   if (!Array.isArray(items) || items.length === 0) return null;
@@ -114,25 +82,7 @@ const getOrderSource = async (userId, body) => {
   const userCartOrder = buildOrderFromCart(userCart);
   if (userCartOrder) return userCartOrder;
 
-  const latestCart = await Cart.findOne({
-    "items.0": { $exists: true },
-  }).sort({ updatedAt: -1 }).populate("items.menuItemId");
-  const latestCartOrder = buildOrderFromCart(latestCart);
-  if (latestCartOrder) return latestCartOrder;
-
-  const menuItem = await getDefaultMenuItem();
-  return {
-    restaurantId: menuItem.restaurantId,
-    items: [
-      {
-        menuItemId: menuItem._id,
-        quantity: 1,
-        price: menuItem.price,
-      },
-    ],
-    totalAmount: menuItem.price,
-    sourceCart: null,
-  };
+  return null;
 };
 
 // ====================================
@@ -144,6 +94,13 @@ const createOrder = async (req, res) => {
 
     const { deliveryAddress, paymentMethod } = req.body;
     const orderSource = await getOrderSource(userId, req.body);
+
+    if (!orderSource) {
+      return res.status(400).json({
+        success: false,
+        message: "Add valid items to cart or send valid order items",
+      });
+    }
 
     const order = await Order.create({
       userId,
@@ -224,6 +181,16 @@ const getOrderById = async (req, res) => {
       });
     }
 
+    if (
+      req.user.role !== "admin" &&
+      order.userId.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can view only your own order",
+      });
+    }
+
     res.status(200).json({
       success: true,
       order,
@@ -288,6 +255,16 @@ const cancelOrder = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Order not found",
+      });
+    }
+
+    if (
+      req.user.role !== "admin" &&
+      order.userId.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can cancel only your own order",
       });
     }
 

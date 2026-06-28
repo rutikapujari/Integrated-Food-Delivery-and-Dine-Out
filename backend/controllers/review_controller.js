@@ -2,7 +2,7 @@ const Review = require("../models/Review");
 const User = require("../models/User");
 const Order = require("../models/Order");
 const Restaurant = require("../models/Restaurant");
-const MenuItem = require("../models/MenuItem");
+const MenuItem = require("../models/Menuitem");
 const mongoose = require("mongoose");
 
 const getRestaurantForReview = async (restaurantId) => {
@@ -11,21 +11,7 @@ const getRestaurantForReview = async (restaurantId) => {
     if (restaurant) return restaurant;
   }
 
-  const existingRestaurant = await Restaurant.findOne().sort({ createdAt: -1 });
-  if (existingRestaurant) return existingRestaurant;
-
-  return Restaurant.create({
-    name: "Default Restaurant",
-    cuisine: "Multi Cuisine",
-    description: "Auto-created restaurant for review testing",
-    address: "Default Address",
-    phone: "0000000000",
-    email: "default@restaurant.local",
-    location: {
-      type: "Point",
-      coordinates: [0, 0],
-    },
-  });
+  return null;
 };
 
 const getDeliveredOrderForReview = async (orderId, userId, restaurantId) => {
@@ -39,38 +25,7 @@ const getDeliveredOrderForReview = async (orderId, userId, restaurantId) => {
     if (order) return order;
   }
 
-  const restaurant = await getRestaurantForReview(restaurantId);
-  let menuItem = await MenuItem.findOne({ restaurantId: restaurant._id }).sort({
-    createdAt: -1,
-  });
-
-  if (!menuItem) {
-    menuItem = await MenuItem.create({
-      restaurantId: restaurant._id,
-      name: "Default Review Item",
-      description: "Auto-created menu item for review testing",
-      category: "General",
-      price: 100,
-      image: "",
-      isAvailable: true,
-    });
-  }
-
-  return Order.create({
-    userId,
-    restaurantId: restaurant._id,
-    items: [
-      {
-        menuItemId: menuItem._id,
-        quantity: 1,
-        price: menuItem.price,
-      },
-    ],
-    totalAmount: menuItem.price,
-    deliveryAddress: "Default Address",
-    paymentMethod: "Cash on Delivery",
-    status: "delivered",
-  });
+  return null;
 };
 
 // ======================================
@@ -116,6 +71,13 @@ const createReview = async (req, res) => {
     } = req.body;
 
     const order = await getDeliveredOrderForReview(orderId, userId, restaurantId);
+
+    if (!order) {
+      return res.status(400).json({
+        success: false,
+        message: "A delivered order is required to review this restaurant",
+      });
+    }
     const resolvedRestaurantId = order.restaurantId;
 
     // Prevent duplicate review
@@ -293,6 +255,16 @@ const updateReview = async (req, res) => {
       });
     }
 
+    if (
+      req.user.role !== "admin" &&
+      review.userId.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can update only your own review",
+      });
+    }
+
     review.rating = req.body.rating || review.rating;
     review.comment = req.body.comment || review.comment;
 
@@ -330,6 +302,16 @@ const deleteReview = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Review not found",
+      });
+    }
+
+    if (
+      req.user.role !== "admin" &&
+      review.userId.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can delete only your own review",
       });
     }
 

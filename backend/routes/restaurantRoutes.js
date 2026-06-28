@@ -10,16 +10,16 @@ const {
 } = require("../controllers/restaurantController");
 
 const auth = require("../middleware/auth");
+const authorize = require("../middleware/role");
 
 // Public Routes
 router.get("/", getRestaurants);
 router.get("/:id", getRestaurantById);
 
-// Create route is public for easy API testing.
-router.post("/", createRestaurant);
+router.post("/", auth, authorize("restaurant", "admin"), createRestaurant);
 
 // Protected Routes
-router.put("/:id", auth, updateRestaurant);
-router.delete("/:id", auth, deleteRestaurant);
+router.put("/:id", auth, authorize("restaurant", "admin"), updateRestaurant);
+router.delete("/:id", auth, authorize("admin"), deleteRestaurant);
 
 module.exports = router;

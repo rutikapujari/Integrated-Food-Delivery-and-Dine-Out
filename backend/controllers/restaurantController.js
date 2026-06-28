@@ -111,6 +111,16 @@ const updateRestaurant = async (req, res) => {
       });
     }
 
+    if (
+      req.user?.role !== "admin" &&
+      restaurant.ownerId?.toString() !== req.user?._id?.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can update only your own restaurant",
+      });
+    }
+
     const updatedRestaurant = await Restaurant.findByIdAndUpdate(
       req.params.id,
       req.body,

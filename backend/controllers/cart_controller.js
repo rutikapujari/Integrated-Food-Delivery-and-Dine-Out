@@ -1,26 +1,10 @@
 const Cart = require("../models/Cart");
-const MenuItem = require("../models/MenuItem");
-const User = require("../models/User");
-const Restaurant = require("../models/Restaurant");
+const MenuItem = require("../models/Menuitem");
 const mongoose = require("mongoose");
 
 const getCartUserId = async (req) => {
   if (req.user?.id) return req.user.id;
-  if (req.body?.userId) return req.body.userId;
-  if (req.query?.userId) return req.query.userId;
-
-  const user = await User.findOneAndUpdate(
-    { email: "testcustomer@example.com" },
-    {
-      name: "Test Customer",
-      email: "testcustomer@example.com",
-      password: "test1234",
-      role: "customer",
-    },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
-  );
-
-  return user._id;
+  return null;
 };
 
 const calculateCartTotal = async (items) => {
@@ -42,34 +26,7 @@ const getMenuItemForCart = async (menuItemId) => {
     if (menuItem) return menuItem;
   }
 
-  const existingMenuItem = await MenuItem.findOne().sort({ createdAt: -1 });
-  if (existingMenuItem) return existingMenuItem;
-
-  let restaurant = await Restaurant.findOne().sort({ createdAt: -1 });
-  if (!restaurant) {
-    restaurant = await Restaurant.create({
-      name: "Default Restaurant",
-      cuisine: "Multi Cuisine",
-      description: "Auto-created restaurant for cart testing",
-      address: "Default Address",
-      phone: "0000000000",
-      email: "default@restaurant.local",
-      location: {
-        type: "Point",
-        coordinates: [0, 0],
-      },
-    });
-  }
-
-  return MenuItem.create({
-    restaurantId: restaurant._id,
-    name: "Default Menu Item",
-    description: "Auto-created menu item for cart testing",
-    category: "General",
-    price: 100,
-    image: "",
-    isAvailable: true,
-  });
+  return null;
 };
 
 // ==============================
@@ -80,6 +37,13 @@ const addToCart = async (req, res) => {
     const { restaurantId, menuItemId, quantity } = req.body;
     const userId = await getCartUserId(req);
     const menuItem = await getMenuItemForCart(menuItemId);
+
+    if (!userId || !menuItem) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid menuItemId is required",
+      });
+    }
     const resolvedMenuItemId = menuItem._id.toString();
 
     let cart = await Cart.findOne({ userId });

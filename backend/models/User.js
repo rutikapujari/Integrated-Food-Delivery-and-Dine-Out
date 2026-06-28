@@ -83,6 +83,18 @@ const userSchema = new mongoose.Schema({
     resetExpire: {
         type: Date,
         default: null
+    },
+
+    refreshToken: {
+        type: String,
+        default: null,
+        select: false
+    },
+
+    refreshExpire: {
+        type: Date,
+        default: null,
+        select: false
     }
 
 },

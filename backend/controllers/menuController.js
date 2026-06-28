@@ -1,4 +1,4 @@
-const MenuItem = require("../models/MenuItem");
+const MenuItem = require("../models/Menuitem");
 const Restaurant = require("../models/Restaurant");
 const mongoose = require("mongoose");
 
@@ -13,21 +13,7 @@ const getRestaurantForMenu = async (restaurantId, restaurantName) => {
     if (restaurant) return restaurant;
   }
 
-  const existingRestaurant = await Restaurant.findOne().sort({ createdAt: -1 });
-  if (existingRestaurant) return existingRestaurant;
-
-  return Restaurant.create({
-    name: restaurantName || "Default Restaurant",
-    cuisine: "Multi Cuisine",
-    description: "Auto-created restaurant for menu testing",
-    address: "Default Address",
-    phone: "0000000000",
-    email: "default@restaurant.local",
-    location: {
-      type: "Point",
-      coordinates: [0, 0],
-    },
-  });
+  return null;
 };
 
 // ==============================
@@ -47,6 +33,23 @@ const createMenuItem = async (req, res) => {
     } = req.body;
 
     const restaurant = await getRestaurantForMenu(restaurantId, restaurantName);
+
+    if (!restaurant) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid restaurantId or restaurantName is required",
+      });
+    }
+
+    if (
+      req.user?.role !== "admin" &&
+      restaurant.ownerId?.toString() !== req.user?._id?.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can create menu items only for your own restaurant",
+      });
+    }
 
     const menuItem = await MenuItem.create({
       restaurantId: restaurant._id,
@@ -155,6 +158,17 @@ const updateMenuItem = async (req, res) => {
       });
     }
 
+    const restaurant = await Restaurant.findById(menuItem.restaurantId);
+    if (
+      req.user?.role !== "admin" &&
+      restaurant?.ownerId?.toString() !== req.user?._id?.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can update only your own restaurant menu",
+      });
+    }
+
     const updatedMenu = await MenuItem.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -188,6 +202,17 @@ const deleteMenuItem = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Menu item not found",
+      });
+    }
+
+    const restaurant = await Restaurant.findById(menuItem.restaurantId);
+    if (
+      req.user?.role !== "admin" &&
+      restaurant?.ownerId?.toString() !== req.user?._id?.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can delete only your own restaurant menu",
       });
     }
 

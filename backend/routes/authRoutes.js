@@ -13,8 +13,18 @@ const generateToken = (id) => {
   }
 
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '30d'
+    expiresIn: process.env.JWT_EXPIRES_IN || '15m'
   });
+};
+
+const createRefreshToken = async (user) => {
+  const refreshToken = crypto.randomBytes(64).toString('hex');
+
+  user.refreshToken = refreshToken;
+  user.refreshExpire = Date.now() + Number(process.env.JWT_REFRESH_EXPIRES_MS || 604800000);
+  await user.save();
+
+  return refreshToken;
 };
 
 router.post('/register', async (req, res) => {
@@ -117,15 +127,77 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    const refreshToken = await createRefreshToken(user);
+
     res.status(200).json({
       success: true,
       token: generateToken(user._id),
+      refreshToken,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role
       }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+router.post('/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Refresh token is required'
+      });
+    }
+
+    const user = await User.findOne({
+      refreshToken,
+      refreshExpire: {
+        $gt: Date.now()
+      }
+    }).select('+refreshToken +refreshExpire');
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token'
+      });
+    }
+
+    const newRefreshToken = await createRefreshToken(user);
+
+    res.status(200).json({
+      success: true,
+      token: generateToken(user._id),
+      refreshToken: newRefreshToken
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+router.post('/logout', auth, async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.user._id, {
+      refreshToken: null,
+      refreshExpire: null
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Logged out successfully'
     });
   } catch (error) {
     res.status(500).json({

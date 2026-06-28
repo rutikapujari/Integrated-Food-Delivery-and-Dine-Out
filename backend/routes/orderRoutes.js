@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const auth = require("../middleware/auth");
+const authorize = require("../middleware/role");
 
 const {
   createOrder,
@@ -25,7 +26,7 @@ router.get("/", auth, getMyOrders);
 router.get("/:id", auth, getOrderById);
 
 // Update Order Status
-router.put("/:id/status", auth, updateOrderStatus);
+router.put("/:id/status", auth, authorize("restaurant", "courier", "admin"), updateOrderStatus);
 
 // Cancel Order
 router.put("/:id/cancel", auth, cancelOrder);

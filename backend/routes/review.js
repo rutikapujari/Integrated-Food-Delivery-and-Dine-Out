@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const auth = require("../middleware/auth");
+const authorize = require("../middleware/role");
 
 const {
   createReview,
@@ -17,7 +18,7 @@ const {
 // ===============================
 
 // Create Review
-router.post("/", auth, createReview);
+router.post("/", auth, authorize("customer", "admin"), createReview);
 
 // Get All Reviews
 router.get("/", getReviews);
@@ -32,6 +33,6 @@ router.get("/:id", getReviewById);
 router.put("/:id", auth, updateReview);
 
 // Delete Review
-router.delete("/:id", auth, deleteReview);
+router.delete("/:id", auth, authorize("customer", "admin"), deleteReview);
 
 module.exports = router;
