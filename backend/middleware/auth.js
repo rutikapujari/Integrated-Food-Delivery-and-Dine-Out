@@ -1,6 +1,23 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
+const getTokenFromRequest = (req) => {
+  const authHeader = req.headers.authorization || "";
+
+  if (authHeader.startsWith("Bearer ")) {
+    return authHeader.split(" ")[1];
+  }
+
+  return (
+    req.headers["x-auth-token"] ||
+    req.cookies?.accessToken ||
+    req.cookies?.token ||
+    req.body?.token ||
+    req.query?.token ||
+    null
+  );
+};
+
 const auth = async (req, res, next) => {
   try {
     if (!process.env.JWT_SECRET) {
@@ -10,15 +27,12 @@ const auth = async (req, res, next) => {
       });
     }
 
-    const authHeader = req.headers.authorization || "";
-    const token = authHeader.startsWith("Bearer ")
-      ? authHeader.split(" ")[1]
-      : req.headers["x-auth-token"];
+    const token = getTokenFromRequest(req);
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: "Authentication token is required",
+        message: "Authentication token is required. Login first or send Authorization: Bearer <token>",
       });
     }
 
@@ -52,3 +66,4 @@ const auth = async (req, res, next) => {
 };
 
 module.exports = auth;
+module.exports.getTokenFromRequest = getTokenFromRequest;

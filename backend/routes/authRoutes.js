@@ -7,6 +7,13 @@ const sendEmail = require('../services/emailService');
 
 const router = express.Router();
 
+const cookieOptions = {
+  httpOnly: true,
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  secure: process.env.NODE_ENV === 'production',
+  maxAge: Number(process.env.JWT_COOKIE_EXPIRES_MS || 604800000)
+};
+
 const generateToken = (userOrId) => {
   if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET is not configured');
@@ -153,11 +160,15 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    const token = generateToken(user);
     const refreshToken = await createRefreshToken(user);
+
+    res.cookie('accessToken', token, cookieOptions);
+    res.cookie('refreshToken', refreshToken, cookieOptions);
 
     res.status(200).json({
       success: true,
-      token: generateToken(user),
+      token,
       refreshToken,
       user: {
         id: user._id,
@@ -199,11 +210,15 @@ router.post('/refresh', async (req, res) => {
       });
     }
 
+    const token = generateToken(user);
     const newRefreshToken = await createRefreshToken(user);
+
+    res.cookie('accessToken', token, cookieOptions);
+    res.cookie('refreshToken', newRefreshToken, cookieOptions);
 
     res.status(200).json({
       success: true,
-      token: generateToken(user),
+      token,
       refreshToken: newRefreshToken
     });
   } catch (error) {
@@ -220,6 +235,9 @@ router.post('/logout', auth, async (req, res) => {
       refreshToken: null,
       refreshExpire: null
     });
+
+    res.clearCookie('accessToken', cookieOptions);
+    res.clearCookie('refreshToken', cookieOptions);
 
     res.status(200).json({
       success: true,

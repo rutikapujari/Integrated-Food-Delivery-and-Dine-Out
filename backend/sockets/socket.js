@@ -3,6 +3,15 @@ const User = require("../models/User");
 
 let io;
 
+const parseCookieHeader = (cookieHeader = "") =>
+  cookieHeader.split(";").reduce((cookies, cookie) => {
+    const [key, ...valueParts] = cookie.trim().split("=");
+    if (!key) return cookies;
+
+    cookies[key] = decodeURIComponent(valueParts.join("="));
+    return cookies;
+  }, {});
+
 const normalizeOrigins = () => {
   const configuredOrigins = process.env.CLIENT_ORIGIN || "http://localhost:5173";
   return configuredOrigins.split(",").map((origin) => origin.trim()).filter(Boolean);
@@ -11,9 +20,12 @@ const normalizeOrigins = () => {
 const getTokenFromSocket = (socket) => {
   const authToken = socket.handshake.auth?.token;
   const bearerToken = socket.handshake.headers?.authorization;
+  const cookies = parseCookieHeader(socket.handshake.headers?.cookie);
 
   if (authToken) return authToken;
   if (bearerToken?.startsWith("Bearer ")) return bearerToken.split(" ")[1];
+  if (cookies.accessToken) return cookies.accessToken;
+  if (cookies.token) return cookies.token;
 
   return null;
 };
