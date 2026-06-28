@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   createRestaurant,
   getRestaurants,
+  getNearbyRestaurants,
   getRestaurantById,
   updateRestaurant,
   deleteRestaurant,
@@ -14,6 +15,7 @@ const authorize = require("../middleware/role");
 
 // Public Routes
 router.get("/", getRestaurants);
+router.get("/nearby", getNearbyRestaurants);
 router.get("/:id", getRestaurantById);
 
 router.post("/", auth, authorize("restaurant", "admin"), createRestaurant);

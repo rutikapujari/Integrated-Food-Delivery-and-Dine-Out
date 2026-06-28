@@ -1,33 +1,98 @@
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+
 let io;
+
+const normalizeOrigins = () => {
+  const configuredOrigins = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+  return configuredOrigins.split(",").map((origin) => origin.trim()).filter(Boolean);
+};
+
+const getTokenFromSocket = (socket) => {
+  const authToken = socket.handshake.auth?.token;
+  const bearerToken = socket.handshake.headers?.authorization;
+
+  if (authToken) return authToken;
+  if (bearerToken?.startsWith("Bearer ")) return bearerToken.split(" ")[1];
+
+  return null;
+};
+
+const attachSocketUser = async (socket, next) => {
+  try {
+    const token = getTokenFromSocket(socket);
+
+    if (!token || !process.env.JWT_SECRET) {
+      return next();
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select("_id name role");
+
+    if (user) {
+      socket.user = user;
+    }
+
+    next();
+  } catch (error) {
+    next();
+  }
+};
+
+const joinUserRooms = (socket) => {
+  if (!socket.user) return;
+
+  socket.join(`user:${socket.user._id}`);
+  socket.join(`role:${socket.user.role}`);
+};
 
 const initializeSocket = (server) => {
   const { Server } = require("socket.io");
 
   io = new Server(server, {
     cors: {
-      origin: "http://localhost:5173",
+      origin: normalizeOrigins(),
       methods: ["GET", "POST", "PUT", "DELETE"],
       credentials: true,
     },
   });
 
-  io.on("connection", (socket) => {
-    console.log("✅ User Connected:", socket.id);
+  io.use(attachSocketUser);
 
-    // Join Order Room
+  io.on("connection", (socket) => {
+    joinUserRooms(socket);
+    console.log("Socket connected:", socket.id);
+
     socket.on("joinOrder", (orderId) => {
+      if (!orderId) return;
+      socket.join(`order:${orderId}`);
       socket.join(orderId);
       console.log(`User joined order room: ${orderId}`);
     });
 
-    // Leave Order Room
     socket.on("leaveOrder", (orderId) => {
+      if (!orderId) return;
+      socket.leave(`order:${orderId}`);
       socket.leave(orderId);
       console.log(`User left order room: ${orderId}`);
     });
 
+    socket.on("joinRestaurant", (restaurantId) => {
+      if (!restaurantId) return;
+      socket.join(`restaurant:${restaurantId}`);
+    });
+
+    socket.on("leaveRestaurant", (restaurantId) => {
+      if (!restaurantId) return;
+      socket.leave(`restaurant:${restaurantId}`);
+    });
+
+    socket.on("joinCourier", () => {
+      socket.join("role:courier");
+    });
+
     socket.on("disconnect", () => {
-      console.log("❌ User Disconnected:", socket.id);
+      console.log("Socket disconnected:", socket.id);
     });
   });
 
@@ -41,7 +106,36 @@ const getIO = () => {
   return io;
 };
 
+const emitOrderUpdate = (order) => {
+  if (!order?._id) return;
+
+  const socket = getIO();
+  const orderPayload = {
+    orderId: order._id,
+    status: order.status,
+    order,
+  };
+
+  socket.to(`order:${order._id}`).to(order._id.toString()).emit("order:update", orderPayload);
+  socket.to(`user:${order.userId}`).emit("order:update", orderPayload);
+  socket.to(`restaurant:${order.restaurantId}`).emit("order:update", orderPayload);
+
+  if (order.courierId) {
+    socket.to(`user:${order.courierId}`).emit("order:update", orderPayload);
+  }
+};
+
+const emitCartUpdate = (userId, cart) => {
+  if (!userId) return;
+
+  getIO().to(`user:${userId}`).emit("cart:update", {
+    cart,
+  });
+};
+
 module.exports = {
   initializeSocket,
   getIO,
+  emitOrderUpdate,
+  emitCartUpdate,
 };

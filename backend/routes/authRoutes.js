@@ -7,12 +7,16 @@ const sendEmail = require('../services/emailService');
 
 const router = express.Router();
 
-const generateToken = (id) => {
+const generateToken = (userOrId) => {
   if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET is not configured');
   }
 
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+  const payload = typeof userOrId === 'object'
+    ? { id: userOrId._id, role: userOrId.role }
+    : { id: userOrId };
+
+  return jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '15m'
   });
 };
@@ -31,7 +35,14 @@ const isEmailConfigured = () => Boolean(process.env.EMAIL_USER && process.env.EM
 
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role, address, location } = req.body;
+    const { name, email, password, role, phone, avatar, address, location } = req.body;
+
+    if (role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin users cannot be created from public registration'
+      });
+    }
 
     const existingUser = await User.findOne({ email });
 
@@ -49,6 +60,8 @@ router.post('/register', async (req, res) => {
       email,
       password,
       role,
+      phone,
+      avatar,
       address,
       location,
       emailToken,
@@ -133,11 +146,18 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    if (user.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: 'User account is inactive'
+      });
+    }
+
     const refreshToken = await createRefreshToken(user);
 
     res.status(200).json({
       success: true,
-      token: generateToken(user._id),
+      token: generateToken(user),
       refreshToken,
       user: {
         id: user._id,
@@ -183,7 +203,7 @@ router.post('/refresh', async (req, res) => {
 
     res.status(200).json({
       success: true,
-      token: generateToken(user._id),
+      token: generateToken(user),
       refreshToken: newRefreshToken
     });
   } catch (error) {

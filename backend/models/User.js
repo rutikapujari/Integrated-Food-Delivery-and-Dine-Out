@@ -34,6 +34,22 @@ const userSchema = new mongoose.Schema({
         default: "customer"
     },
 
+    phone: {
+        type: String,
+        trim: true,
+        default: ""
+    },
+
+    avatar: {
+        type: String,
+        default: ""
+    },
+
+    isActive: {
+        type: Boolean,
+        default: true
+    },
+
     loyaltyPoints: {
         type: Number,
         default: 0
@@ -108,6 +124,10 @@ const userSchema = new mongoose.Schema({
 
 userSchema.index({
     location: "2dsphere"
+});
+
+userSchema.index({
+    role: 1
 });
 
 

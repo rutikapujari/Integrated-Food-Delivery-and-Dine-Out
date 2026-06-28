@@ -1,5 +1,24 @@
 const Restaurant = require("../models/Restaurant");
 
+const toNumber = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+};
+
+const buildRestaurantUpdatePayload = (body) => {
+  const payload = { ...body };
+
+  if (Array.isArray(body.coordinates)) {
+    payload.location = {
+      type: "Point",
+      coordinates: body.coordinates.map(Number),
+    };
+    delete payload.coordinates;
+  }
+
+  return payload;
+};
+
 // ==============================
 // Create Restaurant
 // ==============================
@@ -72,6 +91,70 @@ const getRestaurants = async (req, res) => {
 };
 
 // ==============================
+// Get Nearby Restaurants With $geoNear
+// ==============================
+const getNearbyRestaurants = async (req, res) => {
+  try {
+    const longitude = toNumber(req.query.lng || req.query.longitude);
+    const latitude = toNumber(req.query.lat || req.query.latitude);
+    const maxDistanceKm = toNumber(req.query.maxDistanceKm) || 10;
+    const limit = Math.min(toNumber(req.query.limit) || 20, 100);
+    const cuisine = req.query.cuisine;
+
+    if (longitude === null || latitude === null) {
+      return res.status(400).json({
+        success: false,
+        message: "lat and lng query params are required",
+      });
+    }
+
+    const query = {
+      status: "approved",
+      isOpen: true,
+    };
+
+    if (cuisine) {
+      query.cuisine = new RegExp(cuisine, "i");
+    }
+
+    const restaurants = await Restaurant.aggregate([
+      {
+        $geoNear: {
+          near: {
+            type: "Point",
+            coordinates: [longitude, latitude],
+          },
+          distanceField: "distanceMeters",
+          maxDistance: maxDistanceKm * 1000,
+          spherical: true,
+          query,
+        },
+      },
+      {
+        $addFields: {
+          distanceKm: {
+            $round: [{ $divide: ["$distanceMeters", 1000] }, 2],
+          },
+        },
+      },
+      { $sort: { distanceMeters: 1, rating: -1 } },
+      { $limit: limit },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      count: restaurants.length,
+      restaurants,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ==============================
 // Get Restaurant By ID
 // ==============================
 const getRestaurantById = async (req, res) => {
@@ -123,7 +206,7 @@ const updateRestaurant = async (req, res) => {
 
     const updatedRestaurant = await Restaurant.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      buildRestaurantUpdatePayload(req.body),
       {
         new: true,
         runValidators: true,
@@ -174,6 +257,7 @@ const deleteRestaurant = async (req, res) => {
 module.exports = {
   createRestaurant,
   getRestaurants,
+  getNearbyRestaurants,
   getRestaurantById,
   updateRestaurant,
   deleteRestaurant,

@@ -1,4 +1,4 @@
-const MenuItem = require("../models/Menuitem");
+const MenuItem = require("../models/MenuItem");
 const Restaurant = require("../models/Restaurant");
 const mongoose = require("mongoose");
 

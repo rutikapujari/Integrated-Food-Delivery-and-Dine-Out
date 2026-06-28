@@ -10,6 +10,11 @@ const restaurantSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected', 'suspended'],
+    default: 'approved'
+  },
   cuisine: {
     type: String,
     required: [true, 'Cuisine is required'],
@@ -57,6 +62,25 @@ const restaurantSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  tags: [{
+    type: String,
+    trim: true
+  }],
+  deliveryFee: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  minimumOrderAmount: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  averagePrepTime: {
+    type: Number,
+    default: 30,
+    min: 0
+  },
   openHours: {
     open: {
       type: String,
@@ -85,5 +109,7 @@ const restaurantSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 restaurantSchema.index({ location: '2dsphere' });
+restaurantSchema.index({ ownerId: 1 });
+restaurantSchema.index({ cuisine: 1, isOpen: 1, status: 1 });
 
 module.exports = mongoose.model('Restaurant', restaurantSchema);

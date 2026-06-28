@@ -2,7 +2,7 @@ const Review = require("../models/Review");
 const User = require("../models/User");
 const Order = require("../models/Order");
 const Restaurant = require("../models/Restaurant");
-const MenuItem = require("../models/Menuitem");
+const MenuItem = require("../models/MenuItem");
 const mongoose = require("mongoose");
 
 const getRestaurantForReview = async (restaurantId) => {

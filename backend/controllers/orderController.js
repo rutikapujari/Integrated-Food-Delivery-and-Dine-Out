@@ -1,7 +1,19 @@
 const Order = require("../models/Order");
 const Cart = require("../models/Cart");
-const MenuItem = require("../models/Menuitem");
+const MenuItem = require("../models/MenuItem");
+const Restaurant = require("../models/Restaurant");
 const mongoose = require("mongoose");
+const { emitOrderUpdate } = require("../sockets/socket");
+
+const safeEmitOrderUpdate = (order) => {
+  try {
+    emitOrderUpdate(order);
+  } catch (error) {
+    if (process.env.NODE_ENV !== "test") {
+      console.warn("Order socket emit skipped:", error.message);
+    }
+  }
+};
 
 const findOrderByParamId = async (id) => {
   if (id && mongoose.Types.ObjectId.isValid(id)) {
@@ -14,6 +26,41 @@ const findOrderByParamId = async (id) => {
 
 const populateOrderDetails = (query) =>
   query.populate("restaurantId").populate("items.menuItemId");
+
+const isRestaurantOwnerForOrder = async (user, order) => {
+  if (user?.role !== "restaurant") return false;
+
+  const restaurant = await Restaurant.findOne({
+    _id: order.restaurantId,
+    ownerId: user._id,
+  });
+
+  return Boolean(restaurant);
+};
+
+const canAccessOrder = async (user, order) => {
+  if (user.role === "admin") return true;
+  if (order.userId.toString() === user._id.toString()) return true;
+  if (order.courierId?.toString() === user._id.toString()) return true;
+
+  return isRestaurantOwnerForOrder(user, order);
+};
+
+const canUpdateOrderStatus = async (user, order) => {
+  if (user.role === "admin") return true;
+  if (user.role === "courier") return true;
+
+  return isRestaurantOwnerForOrder(user, order);
+};
+
+const allowedOrderStatuses = [
+  "pending",
+  "confirmed",
+  "preparing",
+  "out_for_delivery",
+  "delivered",
+  "cancelled",
+];
 
 const buildOrderFromItems = async (items) => {
   if (!Array.isArray(items) || items.length === 0) return null;
@@ -92,7 +139,7 @@ const createOrder = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const { deliveryAddress, paymentMethod } = req.body;
+    const { deliveryAddress, deliveryLocation, paymentMethod } = req.body;
     const orderSource = await getOrderSource(userId, req.body);
 
     if (!orderSource) {
@@ -102,20 +149,45 @@ const createOrder = async (req, res) => {
       });
     }
 
+    const restaurant = await Restaurant.findById(orderSource.restaurantId);
+
+    const amountForMinimum = orderSource.sourceCart?.subtotal ?? orderSource.totalAmount;
+
+    if (restaurant?.minimumOrderAmount > 0 && amountForMinimum < restaurant.minimumOrderAmount) {
+      return res.status(400).json({
+        success: false,
+        message: `Minimum order amount is ${restaurant.minimumOrderAmount}`,
+      });
+    }
+
     const order = await Order.create({
       userId,
       restaurantId: orderSource.restaurantId,
       items: orderSource.items,
       totalAmount: orderSource.totalAmount,
       deliveryAddress: deliveryAddress || "Default delivery address",
+      deliveryLocation,
       paymentMethod,
+      statusHistory: [
+        {
+          status: "pending",
+          changedBy: req.user._id,
+        },
+      ],
     });
 
     if (orderSource.sourceCart) {
       orderSource.sourceCart.items = [];
+      orderSource.sourceCart.itemCount = 0;
+      orderSource.sourceCart.subtotal = 0;
+      orderSource.sourceCart.deliveryFee = 0;
+      orderSource.sourceCart.taxAmount = 0;
+      orderSource.sourceCart.discountAmount = 0;
       orderSource.sourceCart.totalPrice = 0;
       await orderSource.sourceCart.save();
     }
+
+    safeEmitOrderUpdate(order);
 
     res.status(201).json({
       success: true,
@@ -137,9 +209,26 @@ const createOrder = async (req, res) => {
 const getMyOrders = async (req, res) => {
   try {
 
-    const orders = await Order.find({
-      userId: req.user.id,
-    })
+    let filter = { userId: req.user.id };
+
+    if (req.user.role === "admin") {
+      filter = {};
+    }
+
+    if (req.user.role === "restaurant") {
+      const restaurants = await Restaurant.find({ ownerId: req.user._id }).select("_id");
+      filter = {
+        restaurantId: {
+          $in: restaurants.map((restaurant) => restaurant._id),
+        },
+      };
+    }
+
+    if (req.user.role === "courier") {
+      filter = { courierId: req.user._id };
+    }
+
+    const orders = await Order.find(filter)
       .populate("restaurantId", "name")
       .populate("items.menuItemId", "name price")
       .sort({ createdAt: -1 });
@@ -181,13 +270,10 @@ const getOrderById = async (req, res) => {
       });
     }
 
-    if (
-      req.user.role !== "admin" &&
-      order.userId.toString() !== req.user._id.toString()
-    ) {
+    if (!(await canAccessOrder(req.user, order))) {
       return res.status(403).json({
         success: false,
-        message: "You can view only your own order",
+        message: "You can view only orders assigned to your account",
       });
     }
 
@@ -214,6 +300,13 @@ const updateOrderStatus = async (req, res) => {
 
     const { status } = req.body;
 
+    if (!allowedOrderStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order status",
+      });
+    }
+
     const order = await findOrderByParamId(req.params.id);
 
     if (!order) {
@@ -223,9 +316,21 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
+    if (!(await canUpdateOrderStatus(req.user, order))) {
+      return res.status(403).json({
+        success: false,
+        message: "You can update only orders assigned to your role",
+      });
+    }
+
     order.status = status;
+    order.statusHistory.push({
+      status,
+      changedBy: req.user._id,
+    });
 
     await order.save();
+    safeEmitOrderUpdate(order);
 
     res.status(200).json({
       success: true,
@@ -258,13 +363,10 @@ const cancelOrder = async (req, res) => {
       });
     }
 
-    if (
-      req.user.role !== "admin" &&
-      order.userId.toString() !== req.user._id.toString()
-    ) {
+    if (!(await canAccessOrder(req.user, order))) {
       return res.status(403).json({
         success: false,
-        message: "You can cancel only your own order",
+        message: "You can cancel only orders assigned to your account",
       });
     }
 
@@ -276,8 +378,14 @@ const cancelOrder = async (req, res) => {
     }
 
     order.status = "cancelled";
+    order.cancellationReason = req.body.reason || order.cancellationReason;
+    order.statusHistory.push({
+      status: "cancelled",
+      changedBy: req.user._id,
+    });
 
     await order.save();
+    safeEmitOrderUpdate(order);
 
     res.status(200).json({
       success: true,

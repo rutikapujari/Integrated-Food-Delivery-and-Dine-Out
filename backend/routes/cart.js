@@ -6,6 +6,7 @@ const {
   addToCart,
   getCart,
   updateCartItem,
+  syncCart,
   removeCartItem,
   clearCart,
 } = require("../controllers/cart_controller");
@@ -20,6 +21,9 @@ router.get("/", getCart);
 
 // Update quantity
 router.put("/update/:menuItemId", updateCartItem);
+
+// Bulk sync cart items
+router.put("/sync", syncCart);
 
 // Remove item from cart
 router.delete("/remove/:menuItemId", removeCartItem);

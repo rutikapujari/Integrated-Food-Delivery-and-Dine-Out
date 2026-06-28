@@ -33,14 +33,48 @@ const cartSchema = new mongoose.Schema(
 
     items: [cartItemSchema],
 
+    itemCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    subtotal: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    deliveryFee: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    taxAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    discountAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     totalPrice: {
       type: Number,
       default: 0,
+      min: 0,
     },
   },
   {
     timestamps: true,
   }
 );
+
+cartSchema.index({ userId: 1 }, { unique: true });
+cartSchema.index({ restaurantId: 1 });
 
 module.exports = mongoose.model("Cart", cartSchema);

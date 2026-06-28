@@ -31,6 +31,7 @@ app.use("/api/orders", require("./routes/orderRoutes"));
 app.use("/api/reservations", require("./routes/reservation"));
 app.use("/api/reviews", require("./routes/review"));
 app.use("/api/payments", paymentRoutes);
+app.use("/api/admin", require("./routes/adminRoutes"));
 // Home Route
 app.get("/", (req, res) => {
   res.send("Food Delivery API is Running...");
