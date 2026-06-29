@@ -42,13 +42,40 @@ const isEmailConfigured = () => Boolean(process.env.EMAIL_USER && process.env.EM
 
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role, phone, avatar, address, location } = req.body;
+    const {
+      name,
+      email,
+      password,
+      role,
+      phone,
+      avatar,
+      address,
+      location,
+      adminRegistrationCode,
+      adminCode,
+      registrationCode
+    } = req.body;
 
-    if (role === 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Admin users cannot be created from public registration'
-      });
+    const normalizedRole = typeof role === 'string' ? role.trim().toLowerCase() : role;
+    const providedAdminCode = String(adminRegistrationCode || adminCode || registrationCode || '').trim();
+
+    if (normalizedRole === 'admin') {
+      const adminExists = await User.exists({ role: 'admin' });
+      const requiredCode = (process.env.ADMIN_REGISTRATION_CODE || '').trim();
+
+      if (adminExists && requiredCode && providedAdminCode !== requiredCode) {
+        return res.status(403).json({
+          success: false,
+          message: 'Valid admin registration code is required'
+        });
+      }
+
+      if (adminExists && !requiredCode && process.env.NODE_ENV === 'production') {
+        return res.status(500).json({
+          success: false,
+          message: 'ADMIN_REGISTRATION_CODE is not configured'
+        });
+      }
     }
 
     const existingUser = await User.findOne({ email });
@@ -66,7 +93,7 @@ router.post('/register', async (req, res) => {
       name,
       email,
       password,
-      role,
+      role: normalizedRole,
       phone,
       avatar,
       address,
@@ -187,12 +214,12 @@ router.post('/login', async (req, res) => {
 
 router.post('/refresh', async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = req.body?.refreshToken || req.cookies?.refreshToken;
 
     if (!refreshToken) {
       return res.status(400).json({
         success: false,
-        message: 'Refresh token is required'
+        message: 'Refresh token is required. Send it in the body or login with cookies enabled.'
       });
     }
 

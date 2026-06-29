@@ -5,13 +5,66 @@ const toNumber = (value) => {
   return Number.isFinite(number) ? number : null;
 };
 
+const normalizeCuisine = (cuisine) => {
+  if (Array.isArray(cuisine)) {
+    return cuisine.map((item) => String(item).trim()).filter(Boolean).join(", ");
+  }
+
+  return cuisine;
+};
+
+const normalizeAddress = (address) => {
+  if (!address || typeof address !== "object" || Array.isArray(address)) {
+    return address;
+  }
+
+  return [
+    address.street,
+    address.city,
+    address.state,
+    address.zipCode || address.pincode,
+    address.country,
+  ]
+    .map((part) => String(part || "").trim())
+    .filter(Boolean)
+    .join(", ");
+};
+
+const normalizeCoordinates = (body) => {
+  const coordinates = body.coordinates || body.location?.coordinates;
+
+  if (!Array.isArray(coordinates)) {
+    return coordinates;
+  }
+
+  return coordinates.map(Number);
+};
+
+const buildRestaurantPayload = (body) => ({
+  ...body,
+  cuisine: normalizeCuisine(body.cuisine),
+  address: normalizeAddress(body.address),
+  location: {
+    type: "Point",
+    coordinates: normalizeCoordinates(body),
+  },
+});
+
 const buildRestaurantUpdatePayload = (body) => {
   const payload = { ...body };
 
-  if (Array.isArray(body.coordinates)) {
+  if (body.cuisine !== undefined) {
+    payload.cuisine = normalizeCuisine(body.cuisine);
+  }
+
+  if (body.address !== undefined) {
+    payload.address = normalizeAddress(body.address);
+  }
+
+  if (body.coordinates !== undefined || body.location?.coordinates !== undefined) {
     payload.location = {
       type: "Point",
-      coordinates: body.coordinates.map(Number),
+      coordinates: normalizeCoordinates(body),
     };
     delete payload.coordinates;
   }
@@ -19,40 +72,23 @@ const buildRestaurantUpdatePayload = (body) => {
   return payload;
 };
 
+const sendControllerError = (res, error) => {
+  const statusCode = error.name === "ValidationError" ? 400 : 500;
+
+  return res.status(statusCode).json({
+    success: false,
+    message: error.message,
+  });
+};
+
 // ==============================
 // Create Restaurant
 // ==============================
 const createRestaurant = async (req, res) => {
   try {
-    const {
-      name,
-      cuisine,
-      description,
-      address,
-      phone,
-      email,
-      image,
-      openHours,
-      isOpen,
-      coordinates,
-      ownerId,
-    } = req.body;
-
     const restaurant = await Restaurant.create({
-      name,
-      ownerId: req.user?.id || ownerId,
-      cuisine,
-      description,
-      address,
-      phone,
-      email,
-      image,
-      openHours,
-      isOpen,
-      location: {
-        type: "Point",
-        coordinates,
-      },
+      ...buildRestaurantPayload(req.body),
+      ownerId: req.user?._id || req.body.ownerId,
     });
 
     res.status(201).json({
@@ -61,10 +97,7 @@ const createRestaurant = async (req, res) => {
       restaurant,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    sendControllerError(res, error);
   }
 };
 
@@ -83,10 +116,7 @@ const getRestaurants = async (req, res) => {
       restaurants,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    sendControllerError(res, error);
   }
 };
 
@@ -147,10 +177,7 @@ const getNearbyRestaurants = async (req, res) => {
       restaurants,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    sendControllerError(res, error);
   }
 };
 
@@ -173,10 +200,7 @@ const getRestaurantById = async (req, res) => {
       restaurant,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    sendControllerError(res, error);
   }
 };
 
@@ -219,10 +243,7 @@ const updateRestaurant = async (req, res) => {
       restaurant: updatedRestaurant,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    sendControllerError(res, error);
   }
 };
 
@@ -247,10 +268,7 @@ const deleteRestaurant = async (req, res) => {
       message: "Restaurant deleted successfully",
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    sendControllerError(res, error);
   }
 };
 

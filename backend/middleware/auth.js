@@ -3,23 +3,42 @@ const User = require("../models/User");
 
 const getTokenFromRequest = (req) => {
   const authHeader = req.headers.authorization || "";
+  const normalizedAuthHeader = authHeader.trim();
 
-  if (authHeader.startsWith("Bearer ")) {
-    return authHeader.split(" ")[1];
+  if (normalizedAuthHeader) {
+    const [scheme, value] = normalizedAuthHeader.split(/\s+/);
+
+    if (/^bearer$/i.test(scheme) && value) {
+      return value;
+    }
+
+    if (/^token$/i.test(scheme) && value) {
+      return value;
+    }
+
+    if (!value) {
+      return scheme;
+    }
   }
 
   return (
     req.headers["x-auth-token"] ||
+    req.headers["token"] ||
     req.cookies?.accessToken ||
     req.cookies?.token ||
     req.body?.token ||
     req.query?.token ||
+    req.query?.access_token ||
     null
   );
 };
 
 const auth = async (req, res, next) => {
   try {
+    if (req.method === "OPTIONS") {
+      return next();
+    }
+
     if (!process.env.JWT_SECRET) {
       return res.status(500).json({
         success: false,
@@ -32,7 +51,14 @@ const auth = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: "Authentication token is required. Login first or send Authorization: Bearer <token>",
+        message: "Authentication token is required. Login first, then send Authorization: Bearer <token> or include cookies/credentials.",
+        loginEndpoint: "POST /api/auth/login",
+        acceptedTokenLocations: [
+          "Authorization: Bearer <token>",
+          "x-auth-token: <token>",
+          "accessToken cookie",
+          "token in body or query",
+        ],
       });
     }
 
