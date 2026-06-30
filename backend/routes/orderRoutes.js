@@ -17,6 +17,7 @@ const {
 // ===============================
 
 // Create Order
+router.post("/", auth, authorize("customer", "admin"), createOrder);
 router.post("/create", auth, authorize("customer", "admin"), createOrder);
 
 // Get Logged-in User Orders

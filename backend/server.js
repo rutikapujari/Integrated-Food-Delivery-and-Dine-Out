@@ -11,8 +11,6 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 const paymentRoutes = require("./routes/paymentRoutes");
 const connectDB = require("./config/db");
 
-connectDB();
-
 const app = express();
 
 const allowedOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
@@ -39,6 +37,7 @@ app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/restaurants", require("./routes/restaurantRoutes"));
 app.use("/api/menu", require("./routes/menuRoutes"));
 app.use("/api/cart", require("./routes/cart"));
+app.use("/api/carts", require("./routes/cart"));
 app.use("/api/orders", require("./routes/orderRoutes"));
 app.use("/api/reservations", require("./routes/reservation"));
 app.use("/api/reviews", require("./routes/review"));
@@ -55,6 +54,24 @@ const server = http.createServer(app);
 
 initializeSocket(server);
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+const startServer = async () => {
+  await connectDB();
+
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+};
+
+server.on("error", (error) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(
+      `Port ${PORT} is already in use. Stop the other process or set a different PORT in backend/.env.`
+    );
+    process.exit(1);
+  }
+
+  console.error("Server Error:", error.message);
+  process.exit(1);
 });
+
+startServer();

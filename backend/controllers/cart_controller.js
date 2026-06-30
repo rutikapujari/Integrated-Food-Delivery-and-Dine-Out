@@ -269,17 +269,32 @@ const syncCart = async (req, res) => {
       });
     }
 
-    const menuItems = await MenuItem.find({
-      _id: { $in: Array.from(mergedItems.keys()) },
-      isAvailable: true,
+    const requestedMenuItemIds = Array.from(mergedItems.keys());
+    const allRequestedMenuItems = await MenuItem.find({
+      _id: { $in: requestedMenuItemIds },
     });
+    const foundMenuItemIds = new Set(
+      allRequestedMenuItems.map((item) => item._id.toString())
+    );
+    const invalidMenuItemIds = requestedMenuItemIds.filter(
+      (id) => !foundMenuItemIds.has(id)
+    );
+    const unavailableMenuItemIds = allRequestedMenuItems
+      .filter((item) => item.isAvailable === false)
+      .map((item) => item._id.toString());
+    const menuItems = allRequestedMenuItems.filter(
+      (item) => item.isAvailable !== false
+    );
 
     const restaurantIds = new Set(menuItems.map((item) => item.restaurantId.toString()));
 
-    if (menuItems.length !== mergedItems.size) {
+    if (invalidMenuItemIds.length > 0 || unavailableMenuItemIds.length > 0) {
       return res.status(400).json({
         success: false,
         message: "Cart contains unavailable or invalid menu items",
+        invalidMenuItemIds,
+        unavailableMenuItemIds,
+        hint: "Use GET /api/menu and send _id values from available menuItems.",
       });
     }
 

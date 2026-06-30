@@ -70,7 +70,7 @@ const buildOrderFromItems = async (items) => {
   let totalAmount = 0;
 
   for (const item of items) {
-    const menuItemId = item.menuItemId || item._id || item.id;
+    const menuItemId = item.menuItemId || item.menuItem || item._id || item.id;
     if (!mongoose.Types.ObjectId.isValid(menuItemId)) continue;
 
     const menuItem = await MenuItem.findById(menuItemId);
