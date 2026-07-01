@@ -3,21 +3,24 @@ const mongoose = require("mongoose");
 const connectDB = async () => {
     try {
         if (!process.env.MONGO_URI) {
-            throw new Error("MONGO_URI is missing from backend/.env");
+            throw new Error("Database connection string is not configured. Add MONGO_URI in backend/.env.");
         }
 
         await mongoose.connect(process.env.MONGO_URI, {
             serverSelectionTimeoutMS: 10000,
         });
 
-        console.log(`MongoDB connected successfully`);
+        console.log("Database connected successfully.");
     } catch (error) {
-        console.error("MongoDB Connection Error:", error.message);
+        console.error("Database connection failed.");
+        console.error(`Reason: ${error.message}`);
+
         if (error.name === "MongooseServerSelectionError") {
             console.error(
-                "Atlas rejected or could not reach this connection. Add your current public IP in MongoDB Atlas > Network Access > Add IP Address, then restart nodemon."
+                "Connection guidance: MongoDB Atlas could not be reached. Please confirm your internet connection, verify the MONGO_URI value, and allow your current IP address in Atlas Network Access before restarting the server."
             );
         }
+
         process.exit(1);
     }
 };
