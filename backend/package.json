@@ -6,7 +6,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed:demo-cart": "node scripts/seedDemoCartData.js",
     "seed:food": "node scripts/seedFoodData.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "notes:pdf": "md-to-pdf docs/backend-architecture-notes.md -o docs/backend-architecture-notes.pdf"
   },
   "keywords": [],
   "author": "",
