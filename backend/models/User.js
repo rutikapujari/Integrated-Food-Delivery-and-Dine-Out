@@ -88,10 +88,25 @@ const userSchema = new mongoose.Schema({
         default: null
     },
 
+    emailOtp: {
+        type: String,
+        default: null
+    },
+
+    emailOtpExpire: {
+        type: Date,
+        default: null
+    },
+
 
     // FORGOT PASSWORD
 
     resetToken: {
+        type: String,
+        default: null
+    },
+
+    resetOtp: {
         type: String,
         default: null
     },

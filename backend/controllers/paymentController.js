@@ -2,6 +2,8 @@ const Stripe = require("stripe");
 const mongoose = require("mongoose");
 const Payment = require("../models/Payment");
 const Order = require("../models/Order");
+const User = require("../models/User");
+const { sendNotificationEmail } = require("../services/notificationService");
 
 let stripe;
 
@@ -31,6 +33,24 @@ const findCheckoutOrder = async (orderId) => {
   }
 
   return Order.findOne().sort({ createdAt: -1 });
+};
+
+const sendPaymentSuccessEmail = async (payment) => {
+  const user = await User.findById(payment.userId).select("name email");
+
+  if (!user?.email) return;
+
+  await sendNotificationEmail(
+    user.email,
+    "Payment Successful",
+    `
+      <h2>Payment Successful</h2>
+      <p>Hello ${user.name || "Customer"},</p>
+      <p>Your payment has been completed successfully.</p>
+      <p><strong>Order ID:</strong> ${payment.orderId}</p>
+      <p><strong>Amount:</strong> ${payment.currency.toUpperCase()} ${payment.amount}</p>
+    `
+  );
 };
 
 // ======================================
@@ -134,6 +154,8 @@ const verifyPayment = async (req, res) => {
       status: "confirmed",
     });
 
+    await sendPaymentSuccessEmail(payment);
+
     res.status(200).json({
       success: true,
       message: "Payment verified successfully",
@@ -183,6 +205,8 @@ const stripeWebhook = async (req, res) => {
           paymentStatus: "Paid",
           status: "confirmed",
         });
+
+        await sendPaymentSuccessEmail(payment);
 
       }
     }

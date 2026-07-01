@@ -40,6 +40,10 @@ const createRefreshToken = async (user) => {
 
 const isEmailConfigured = () => Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
 
+const generateOtp = () => String(crypto.randomInt(100000, 1000000));
+
+const getOtpExpiry = () => Date.now() + Number(process.env.OTP_EXPIRES_MS || 10 * 60 * 1000);
+
 router.post('/register', async (req, res) => {
   try {
     const {
@@ -88,6 +92,7 @@ router.post('/register', async (req, res) => {
     }
 
     const emailToken = crypto.randomBytes(32).toString('hex');
+    const emailOtp = generateOtp();
 
     const user = await User.create({
       name,
@@ -99,6 +104,8 @@ router.post('/register', async (req, res) => {
       address,
       location,
       emailToken,
+      emailOtp,
+      emailOtpExpire: getOtpExpiry(),
       isVerified: isEmailConfigured() ? false : true
     });
 
@@ -110,7 +117,10 @@ router.post('/register', async (req, res) => {
         'Verify Email',
         `
           <h2>Verify Account</h2>
-          <p>Click the link below to verify your account.</p>
+          <p>Your OTP is:</p>
+          <h1 style="letter-spacing:4px">${emailOtp}</h1>
+          <p>This OTP expires in 10 minutes.</p>
+          <p>You can also click the link below to verify your account.</p>
           <a href="${verifyUrl}">Verify</a>
         `
       );
@@ -120,7 +130,91 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: isEmailConfigured() ? 'Check email to verify' : 'User registered successfully'
+      message: isEmailConfigured() ? 'Check email for OTP to verify' : 'User registered successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const user = await User.findOne({
+      email,
+      emailOtp: String(otp || '').trim(),
+      emailOtpExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP'
+      });
+    }
+
+    user.isVerified = true;
+    user.emailToken = null;
+    user.emailOtp = null;
+    user.emailOtpExpire = null;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Email verified successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+router.post('/resend-otp', async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified'
+      });
+    }
+
+    const emailOtp = generateOtp();
+    user.emailOtp = emailOtp;
+    user.emailOtpExpire = getOtpExpiry();
+    await user.save();
+
+    if (isEmailConfigured()) {
+      await sendEmail(
+        user.email,
+        'Your Verification OTP',
+        `
+          <h2>Verify Account</h2>
+          <p>Your new OTP is:</p>
+          <h1 style="letter-spacing:4px">${emailOtp}</h1>
+          <p>This OTP expires in 10 minutes.</p>
+        `
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      message: isEmailConfigured() ? 'OTP sent successfully' : 'OTP generated but email is not configured'
     });
   } catch (error) {
     res.status(500).json({
@@ -145,6 +239,8 @@ router.get('/verify/:token', async (req, res) => {
 
     user.isVerified = true;
     user.emailToken = null;
+    user.emailOtp = null;
+    user.emailOtpExpire = null;
 
     await user.save();
 
@@ -292,8 +388,10 @@ router.post('/forgot', async (req, res) => {
     }
 
     const token = crypto.randomBytes(32).toString('hex');
+    const resetOtp = generateOtp();
 
     user.resetToken = token;
+    user.resetOtp = resetOtp;
     user.resetExpire = Date.now() + 3600000;
 
     await user.save();
@@ -306,7 +404,10 @@ router.post('/forgot', async (req, res) => {
         'Reset Password',
         `
           <h2>Reset Password</h2>
-          <p>Click the link below to reset your password. This link expires in 1 hour.</p>
+          <p>Your password reset OTP is:</p>
+          <h1 style="letter-spacing:4px">${resetOtp}</h1>
+          <p>This OTP and link expire in 1 hour.</p>
+          <p>Click the link below to reset your password.</p>
           <a href="${resetUrl}">Reset Password</a>
         `
       );
@@ -316,8 +417,51 @@ router.post('/forgot', async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: isEmailConfigured() ? 'Reset email sent' : 'Password reset link generated',
+      message: isEmailConfigured() ? 'Reset OTP sent' : 'Password reset OTP generated',
       resetUrl
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+router.post('/reset-with-otp', async (req, res) => {
+  try {
+    const { email, otp, password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password is required'
+      });
+    }
+
+    const user = await User.findOne({
+      email,
+      resetOtp: String(otp || '').trim(),
+      resetExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP'
+      });
+    }
+
+    user.password = password;
+    user.resetToken = null;
+    user.resetOtp = null;
+    user.resetExpire = null;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password updated successfully'
     });
   } catch (error) {
     res.status(500).json({
@@ -467,6 +611,7 @@ router.post('/reset/:token', async (req, res) => {
 
     user.password = password;
     user.resetToken = null;
+    user.resetOtp = null;
     user.resetExpire = null;
 
     await user.save();

@@ -2,8 +2,10 @@ const Order = require("../models/Order");
 const Cart = require("../models/Cart");
 const MenuItem = require("../models/MenuItem");
 const Restaurant = require("../models/Restaurant");
+const User = require("../models/User");
 const mongoose = require("mongoose");
 const { emitOrderUpdate } = require("../sockets/socket");
+const { sendNotificationEmail } = require("../services/notificationService");
 
 const safeEmitOrderUpdate = (order) => {
   try {
@@ -13,6 +15,25 @@ const safeEmitOrderUpdate = (order) => {
       console.warn("Order socket emit skipped:", error.message);
     }
   }
+};
+
+const sendOrderEmail = async (order, subject, message) => {
+  const user = await User.findById(order.userId).select("name email");
+
+  if (!user?.email) return;
+
+  await sendNotificationEmail(
+    user.email,
+    subject,
+    `
+      <h2>${subject}</h2>
+      <p>Hello ${user.name || "Customer"},</p>
+      <p>${message}</p>
+      <p><strong>Order ID:</strong> ${order._id}</p>
+      <p><strong>Status:</strong> ${order.status}</p>
+      <p><strong>Total:</strong> Rs. ${order.totalAmount}</p>
+    `
+  );
 };
 
 const findOrderByParamId = async (id) => {
@@ -188,6 +209,11 @@ const createOrder = async (req, res) => {
     }
 
     safeEmitOrderUpdate(order);
+    await sendOrderEmail(
+      order,
+      "Order Placed Successfully",
+      "Your food order has been placed successfully."
+    );
 
     res.status(201).json({
       success: true,
@@ -331,6 +357,11 @@ const updateOrderStatus = async (req, res) => {
 
     await order.save();
     safeEmitOrderUpdate(order);
+    await sendOrderEmail(
+      order,
+      "Order Status Updated",
+      `Your order status was updated to ${status}.`
+    );
 
     res.status(200).json({
       success: true,
@@ -386,6 +417,11 @@ const cancelOrder = async (req, res) => {
 
     await order.save();
     safeEmitOrderUpdate(order);
+    await sendOrderEmail(
+      order,
+      "Order Cancelled",
+      "Your order has been cancelled."
+    );
 
     res.status(200).json({
       success: true,

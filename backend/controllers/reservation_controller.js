@@ -1,4 +1,28 @@
 const Reservation = require("../models/Reservation");
+const User = require("../models/User");
+const Restaurant = require("../models/Restaurant");
+const { sendNotificationEmail } = require("../services/notificationService");
+
+const sendReservationEmail = async (reservation, subject, message) => {
+  const user = await User.findById(reservation.userId).select("name email");
+  const restaurant = await Restaurant.findById(reservation.restaurantId).select("name");
+
+  if (!user?.email) return;
+
+  await sendNotificationEmail(
+    user.email,
+    subject,
+    `
+      <h2>${subject}</h2>
+      <p>Hello ${user.name || "Customer"},</p>
+      <p>${message}</p>
+      <p><strong>Restaurant:</strong> ${restaurant?.name || reservation.restaurantId}</p>
+      <p><strong>Date:</strong> ${reservation.reservationDate}</p>
+      <p><strong>Time:</strong> ${reservation.reservationTime}</p>
+      <p><strong>Status:</strong> ${reservation.status}</p>
+    `
+  );
+};
 
 // ======================================
 // Create Reservation
@@ -23,6 +47,12 @@ const createReservation = async (req, res) => {
       numberOfGuests,
       specialRequest,
     });
+
+    await sendReservationEmail(
+      reservation,
+      "Reservation Created",
+      "Your table reservation has been created successfully."
+    );
 
     res.status(201).json({
       success: true,
@@ -140,6 +170,11 @@ const updateReservation = async (req, res) => {
       req.body.specialRequest || reservation.specialRequest;
 
     await reservation.save();
+    await sendReservationEmail(
+      reservation,
+      "Reservation Updated",
+      "Your reservation details have been updated."
+    );
 
     res.status(200).json({
       success: true,
@@ -171,6 +206,11 @@ const updateReservationStatus = async (req, res) => {
     reservation.status = req.body.status;
 
     await reservation.save();
+    await sendReservationEmail(
+      reservation,
+      "Reservation Status Updated",
+      `Your reservation status was updated to ${reservation.status}.`
+    );
 
     res.status(200).json({
       success: true,
@@ -202,6 +242,11 @@ const cancelReservation = async (req, res) => {
     reservation.status = "Cancelled";
 
     await reservation.save();
+    await sendReservationEmail(
+      reservation,
+      "Reservation Cancelled",
+      "Your reservation has been cancelled."
+    );
 
     res.status(200).json({
       success: true,
