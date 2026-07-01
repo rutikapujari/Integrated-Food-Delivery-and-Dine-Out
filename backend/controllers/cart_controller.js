@@ -422,6 +422,61 @@ const clearCart = async (req, res) => {
   }
 };
 
+// ==============================
+// Delete Cart Or Item By ID
+// ==============================
+const deleteCartByIdOrItem = async (req, res) => {
+  try {
+    const userId = await getCartUserId(req);
+    const { id } = req.params;
+    const cart = await findUserCart(userId);
+
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message: "Cart not found",
+      });
+    }
+
+    if (cart._id.toString() === id) {
+      await Cart.deleteOne({ _id: cart._id, userId });
+      safeEmitCartUpdate(userId, null);
+
+      return res.status(200).json({
+        success: true,
+        message: "Cart deleted successfully",
+      });
+    }
+
+    const existingLength = cart.items.length;
+    cart.items = cart.items.filter((item) => item.menuItemId.toString() !== id);
+
+    if (cart.items.length === existingLength) {
+      return res.status(404).json({
+        success: false,
+        message: "Cart or cart item not found",
+      });
+    }
+
+    await calculateCartSummary(cart);
+    await cart.save();
+
+    const populatedCart = await populateCart(Cart.findById(cart._id));
+    safeEmitCartUpdate(userId, populatedCart);
+
+    res.status(200).json({
+      success: true,
+      message: "Item removed successfully",
+      cart: populatedCart,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   addToCart,
   getCart,
@@ -429,4 +484,5 @@ module.exports = {
   syncCart,
   removeCartItem,
   clearCart,
+  deleteCartByIdOrItem,
 };

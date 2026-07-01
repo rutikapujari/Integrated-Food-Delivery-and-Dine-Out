@@ -16,28 +16,49 @@ const getRestaurantForMenu = async (restaurantId, restaurantName) => {
   return null;
 };
 
+const resolveRestaurantInput = (body) => {
+  const restaurant = body.restaurant;
+
+  if (body.restaurantId || body.restaurantName || !restaurant) {
+    return {
+      restaurantId: body.restaurantId,
+      restaurantName: body.restaurantName,
+    };
+  }
+
+  if (typeof restaurant === "object") {
+    return {
+      restaurantId: restaurant._id || restaurant.id,
+      restaurantName: restaurant.name,
+    };
+  }
+
+  return mongoose.Types.ObjectId.isValid(restaurant)
+    ? { restaurantId: restaurant, restaurantName: undefined }
+    : { restaurantId: undefined, restaurantName: restaurant };
+};
+
 // ==============================
 // Create Menu Item
 // ==============================
 const createMenuItem = async (req, res) => {
   try {
     const {
-      restaurantId,
       name,
       description,
       category,
       price,
       image,
       isAvailable,
-      restaurantName,
     } = req.body;
+    const { restaurantId, restaurantName } = resolveRestaurantInput(req.body);
 
     const restaurant = await getRestaurantForMenu(restaurantId, restaurantName);
 
     if (!restaurant) {
       return res.status(400).json({
         success: false,
-        message: "Valid restaurantId or restaurantName is required",
+        message: "Valid restaurantId, restaurantName, or restaurant is required",
       });
     }
 

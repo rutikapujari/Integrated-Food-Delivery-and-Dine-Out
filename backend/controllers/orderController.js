@@ -83,6 +83,24 @@ const allowedOrderStatuses = [
   "cancelled",
 ];
 
+const getMenuItemId = (item) => {
+  const candidate =
+    item?.menuItemId ||
+    item?.menuItem ||
+    item?.menu_item_id ||
+    item?.menuItem_id ||
+    item?._id ||
+    item?.id;
+
+  if (!candidate) return null;
+
+  if (typeof candidate === "object") {
+    return candidate._id || candidate.id || null;
+  }
+
+  return candidate;
+};
+
 const buildOrderFromItems = async (items) => {
   if (!Array.isArray(items) || items.length === 0) return null;
 
@@ -91,7 +109,7 @@ const buildOrderFromItems = async (items) => {
   let totalAmount = 0;
 
   for (const item of items) {
-    const menuItemId = item.menuItemId || item.menuItem || item._id || item.id;
+    const menuItemId = getMenuItemId(item);
     if (!mongoose.Types.ObjectId.isValid(menuItemId)) continue;
 
     const menuItem = await MenuItem.findById(menuItemId);
@@ -122,9 +140,9 @@ const buildOrderFromCart = (cart) => {
   if (!cart || !cart.items || cart.items.length === 0) return null;
 
   const orderItems = cart.items
-    .filter((item) => item.menuItemId)
+    .filter((item) => getMenuItemId(item))
     .map((item) => ({
-      menuItemId: item.menuItemId._id,
+      menuItemId: getMenuItemId(item),
       quantity: item.quantity,
       price: item.menuItemId.price,
     }));
