@@ -83,6 +83,24 @@ const allowedOrderStatuses = [
   "cancelled",
 ];
 
+const normalizePaymentMethod = (paymentMethod) => {
+  if (!paymentMethod) return undefined;
+
+  const normalized = paymentMethod.toString().trim().toLowerCase();
+  const aliases = {
+    card: "Card",
+    "credit card": "Card",
+    "debit card": "Card",
+    stripe: "Card",
+    upi: "UPI",
+    cod: "Cash on Delivery",
+    cash: "Cash on Delivery",
+    "cash on delivery": "Cash on Delivery",
+  };
+
+  return aliases[normalized] || paymentMethod;
+};
+
 const getMenuItemId = (item) => {
   const candidate =
     item?.menuItemId ||
@@ -206,7 +224,7 @@ const createOrder = async (req, res) => {
       totalAmount: orderSource.totalAmount,
       deliveryAddress: deliveryAddress || "Default delivery address",
       deliveryLocation,
-      paymentMethod,
+      paymentMethod: normalizePaymentMethod(paymentMethod),
       statusHistory: [
         {
           status: "pending",

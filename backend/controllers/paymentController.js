@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const Payment = require("../models/Payment");
 const Order = require("../models/Order");
 const User = require("../models/User");
+const Restaurant = require("../models/Restaurant");
 const { sendNotificationEmail } = require("../services/notificationService");
 
 let stripe;
@@ -35,6 +36,44 @@ const findCheckoutOrder = async (orderId) => {
   return Order.findOne().sort({ createdAt: -1 });
 };
 
+const normalizePaymentStatus = (status) => {
+  if (!status) return "Pending";
+
+  const normalized = status.toString().trim().toLowerCase();
+  const aliases = {
+    success: "Paid",
+    successful: "Paid",
+    completed: "Paid",
+    complete: "Paid",
+    paid: "Paid",
+    pending: "Pending",
+    failed: "Failed",
+    failure: "Failed",
+    refunded: "Refunded",
+    refund: "Refunded",
+  };
+
+  return aliases[normalized] || status;
+};
+
+const normalizePaymentMethod = (method) => {
+  if (!method) return "card";
+
+  const normalized = method.toString().trim().toLowerCase();
+  const aliases = {
+    "credit card": "card",
+    "debit card": "card",
+    card: "card",
+    stripe: "card",
+    upi: "UPI",
+    cod: "Cash on Delivery",
+    cash: "Cash on Delivery",
+    "cash on delivery": "Cash on Delivery",
+  };
+
+  return aliases[normalized] || method;
+};
+
 const sendPaymentSuccessEmail = async (payment) => {
   const user = await User.findById(payment.userId).select("name email");
 
@@ -51,6 +90,235 @@ const sendPaymentSuccessEmail = async (payment) => {
       <p><strong>Amount:</strong> ${payment.currency.toUpperCase()} ${payment.amount}</p>
     `
   );
+};
+
+// ======================================
+// Get Payments
+// ======================================
+const getPayments = async (req, res) => {
+  try {
+    let filter = {};
+
+    if (req.user.role === "customer") {
+      filter.userId = req.user._id;
+    }
+
+    if (req.user.role === "restaurant") {
+      const restaurants = await Restaurant.find({ ownerId: req.user._id }).select("_id");
+      const orders = await Order.find({
+        restaurantId: {
+          $in: restaurants.map((restaurant) => restaurant._id),
+        },
+      }).select("_id");
+      filter.orderId = {
+        $in: orders.map((order) => order._id),
+      };
+    }
+
+    if (req.query.orderId && mongoose.Types.ObjectId.isValid(req.query.orderId)) {
+      filter.orderId = req.query.orderId;
+    }
+
+    const payments = await Payment.find(filter)
+      .populate("orderId", "totalAmount status paymentStatus restaurantId")
+      .populate("userId", "name email")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: payments.length,
+      payments,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ======================================
+// Create Manual Payment Record
+// ======================================
+const createPayment = async (req, res) => {
+  try {
+    const orderId = getOrderIdFromRequest(req.body);
+    const order = await findCheckoutOrder(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "No order found. Create an order first, then create payment.",
+      });
+    }
+
+    const paymentStatus = normalizePaymentStatus(req.body.paymentStatus);
+    const payment = await Payment.create({
+      orderId: order._id,
+      userId: req.body.userId || order.userId,
+      amount: req.body.amount || order.totalAmount,
+      currency: req.body.currency || "inr",
+      paymentMethod: normalizePaymentMethod(req.body.paymentMethod),
+      paymentStatus,
+      stripeSessionId: req.body.stripeSessionId || "",
+      stripePaymentIntentId:
+        req.body.transactionId ||
+        req.body.stripePaymentIntentId ||
+        req.body.paymentIntentId ||
+        "",
+    });
+
+    if (paymentStatus === "Paid") {
+      await Order.findByIdAndUpdate(order._id, {
+        paymentStatus: "Paid",
+        status: "confirmed",
+      });
+
+      await sendPaymentSuccessEmail(payment);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Payment recorded successfully",
+      payment,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ======================================
+// Update Payment
+// ======================================
+const updatePayment = async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid payment id is required",
+      });
+    }
+
+    const payment = await Payment.findById(req.params.id);
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      });
+    }
+
+    const order = await Order.findById(payment.orderId);
+
+    if (
+      req.user.role !== "admin" &&
+      payment.userId.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can update only your own payment",
+      });
+    }
+
+    if (req.body.amount !== undefined) {
+      payment.amount = req.body.amount;
+    }
+
+    if (req.body.currency) {
+      payment.currency = req.body.currency;
+    }
+
+    if (req.body.paymentMethod) {
+      payment.paymentMethod = normalizePaymentMethod(req.body.paymentMethod);
+    }
+
+    if (req.body.paymentStatus) {
+      payment.paymentStatus = normalizePaymentStatus(req.body.paymentStatus);
+    }
+
+    if (req.body.transactionId || req.body.stripePaymentIntentId || req.body.paymentIntentId) {
+      payment.stripePaymentIntentId =
+        req.body.transactionId ||
+        req.body.stripePaymentIntentId ||
+        req.body.paymentIntentId;
+    }
+
+    if (req.body.stripeSessionId !== undefined) {
+      payment.stripeSessionId = req.body.stripeSessionId;
+    }
+
+    await payment.save();
+
+    if (order) {
+      if (payment.paymentStatus === "Paid") {
+        order.paymentStatus = "Paid";
+        order.status = "confirmed";
+      } else if (payment.paymentStatus === "Failed") {
+        order.paymentStatus = "Pending";
+      }
+
+      await order.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Payment updated successfully",
+      payment,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ======================================
+// Delete Payment
+// ======================================
+const deletePayment = async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid payment id is required",
+      });
+    }
+
+    const payment = await Payment.findById(req.params.id);
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      });
+    }
+
+    if (
+      req.user.role !== "admin" &&
+      payment.userId.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can delete only your own payment",
+      });
+    }
+
+    await Payment.deleteOne({ _id: payment._id });
+
+    res.status(200).json({
+      success: true,
+      message: "Payment deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 // ======================================
@@ -224,6 +492,10 @@ const stripeWebhook = async (req, res) => {
 };
 
 module.exports = {
+  getPayments,
+  createPayment,
+  updatePayment,
+  deletePayment,
   createCheckoutSession,
   verifyPayment,
   stripeWebhook,
