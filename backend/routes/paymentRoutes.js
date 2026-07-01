@@ -6,6 +6,7 @@ const auth = require("../middleware/auth");
 const {
   createCheckoutSession,
   verifyPayment,
+  stripeWebhook,
 } = require("../controllers/paymentController");
 
 // ==============================
@@ -17,5 +18,8 @@ router.post("/checkout", auth, createCheckoutSession);
 
 // Verify Payment
 router.post("/verify", auth, verifyPayment);
+
+// Stripe webhook endpoint
+router.post("/webhook", stripeWebhook);
 
 module.exports = router;
