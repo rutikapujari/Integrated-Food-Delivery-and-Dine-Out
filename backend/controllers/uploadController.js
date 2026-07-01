@@ -7,7 +7,10 @@ const configureCloudinary = () => {
   const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = process.env;
 
   if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
-    throw new Error("Cloudinary environment variables are required");
+    console.warn(
+      "Cloudinary env vars are not set. Cloudinary uploads will be unavailable until CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are provided."
+    );
+    return false;
   }
 
   cloudinary.config({
@@ -15,6 +18,8 @@ const configureCloudinary = () => {
     api_key: CLOUDINARY_API_KEY,
     api_secret: CLOUDINARY_API_SECRET,
   });
+
+  return true;
 };
 
 const uploadToCloudinary = (fileBuffer, folder) =>
@@ -87,10 +92,13 @@ const uploadImage = async (req, res) => {
     const filename = `${Date.now()}_${sanitizeFilename(originalName)}`;
 
     if (provider === "cloudinary") {
-      configureCloudinary();
-      const result = await uploadToCloudinary(req.file.buffer, `food-delivery/${folder}`);
-
-      return res.status(201).json({ success: true, url: result.secure_url, publicId: result.public_id });
+      const ok = configureCloudinary();
+      if (!ok) {
+        console.warn("Falling back to local storage because Cloudinary is not configured.");
+      } else {
+        const result = await uploadToCloudinary(req.file.buffer, `food-delivery/${folder}`);
+        return res.status(201).json({ success: true, url: result.secure_url, publicId: result.public_id });
+      }
     }
 
     if (provider === "s3") {
