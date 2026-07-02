@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const SupportTicket = require("../models/SupportTicket");
+const { createNotification } = require("./notificationController");
 
 const normalizeTicketPayload = (body) => ({
   orderId: body.orderId || body.order || body.order_id || null,
@@ -163,6 +164,21 @@ const addTicketReply = async (req, res) => {
 
     await ticket.save();
 
+    if (req.user.role === "admin") {
+      await createNotification({
+        userId: ticket.userId,
+        title: "Support replied to your ticket",
+        message: `New reply on: ${ticket.subject}`,
+        type: "support",
+        priority: "normal",
+        actionUrl: `/support/tickets/${ticket._id}`,
+        metadata: {
+          ticketId: ticket._id,
+          status: ticket.status,
+        },
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: "Reply added successfully",
@@ -195,6 +211,20 @@ const updateTicketStatus = async (req, res) => {
     if (priority) ticket.priority = priority;
 
     await ticket.save();
+
+    await createNotification({
+      userId: ticket.userId,
+      title: "Support ticket updated",
+      message: `Your ticket "${ticket.subject}" is now ${ticket.status}`,
+      type: "support",
+      priority: ["resolved", "closed"].includes(ticket.status) ? "normal" : "high",
+      actionUrl: `/support/tickets/${ticket._id}`,
+      metadata: {
+        ticketId: ticket._id,
+        status: ticket.status,
+        priority: ticket.priority,
+      },
+    });
 
     res.status(200).json({
       success: true,
