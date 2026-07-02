@@ -7,10 +7,15 @@ const toNumber = (value) => {
 
 const normalizeCuisine = (cuisine) => {
   if (Array.isArray(cuisine)) {
-    return cuisine.map((item) => String(item).trim()).filter(Boolean).join(", ");
+    const normalizedCuisine = cuisine
+      .map((item) => String(item).trim())
+      .filter(Boolean)
+      .join(", ");
+
+    return normalizedCuisine || "General";
   }
 
-  return cuisine;
+  return String(cuisine || "").trim() || "General";
 };
 
 const normalizeAddress = (address) => {
@@ -30,14 +35,38 @@ const normalizeAddress = (address) => {
     .join(", ");
 };
 
-const normalizeCoordinates = (body) => {
+const normalizeCoordinates = (body, fallbackCoordinates = [0, 0]) => {
   const coordinates = body.coordinates || body.location?.coordinates;
 
-  if (!Array.isArray(coordinates)) {
-    return coordinates;
+  if (Array.isArray(coordinates)) {
+    const normalizedCoordinates = coordinates.map(Number);
+
+    return normalizedCoordinates.every(Number.isFinite)
+      ? normalizedCoordinates
+      : fallbackCoordinates;
   }
 
-  return coordinates.map(Number);
+  if (coordinates && typeof coordinates === "object") {
+    const longitude = toNumber(coordinates.lng ?? coordinates.longitude);
+    const latitude = toNumber(coordinates.lat ?? coordinates.latitude);
+
+    if (longitude !== null && latitude !== null) {
+      return [longitude, latitude];
+    }
+  }
+
+  const longitude = toNumber(
+    body.lng ?? body.longitude ?? body.location?.lng ?? body.location?.longitude
+  );
+  const latitude = toNumber(
+    body.lat ?? body.latitude ?? body.location?.lat ?? body.location?.latitude
+  );
+
+  if (longitude !== null && latitude !== null) {
+    return [longitude, latitude];
+  }
+
+  return fallbackCoordinates;
 };
 
 const buildRestaurantPayload = (body) => ({
@@ -64,7 +93,7 @@ const buildRestaurantUpdatePayload = (body) => {
   if (body.coordinates !== undefined || body.location?.coordinates !== undefined) {
     payload.location = {
       type: "Point",
-      coordinates: normalizeCoordinates(body),
+      coordinates: normalizeCoordinates(body, undefined),
     };
     delete payload.coordinates;
   }
