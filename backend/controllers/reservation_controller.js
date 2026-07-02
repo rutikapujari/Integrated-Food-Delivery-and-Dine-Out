@@ -24,6 +24,32 @@ const sendReservationEmail = async (reservation, subject, message) => {
   );
 };
 
+const normalizeReservationPayload = (body) => ({
+  restaurantId: body.restaurantId || body.restaurant,
+  reservationDate: body.reservationDate || body.date || body.reservation_date,
+  reservationTime: body.reservationTime || body.time || body.reservation_time,
+  numberOfGuests:
+    body.numberOfGuests || body.guests || body.partySize || body.party_size,
+  specialRequest:
+    body.specialRequest || body.specialRequests || body.special_request || "",
+});
+
+const validateReservationPayload = ({
+  restaurantId,
+  reservationDate,
+  reservationTime,
+  numberOfGuests,
+}) => {
+  const missingFields = [];
+
+  if (!restaurantId) missingFields.push("restaurantId");
+  if (!reservationDate) missingFields.push("reservationDate");
+  if (!reservationTime) missingFields.push("reservationTime");
+  if (!numberOfGuests) missingFields.push("numberOfGuests");
+
+  return missingFields;
+};
+
 // ======================================
 // Create Reservation
 // ======================================
@@ -37,7 +63,21 @@ const createReservation = async (req, res) => {
       reservationTime,
       numberOfGuests,
       specialRequest,
-    } = req.body;
+    } = normalizeReservationPayload(req.body);
+
+    const missingFields = validateReservationPayload({
+      restaurantId,
+      reservationDate,
+      reservationTime,
+      numberOfGuests,
+    });
+
+    if (missingFields.length) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required reservation fields: ${missingFields.join(", ")}`,
+      });
+    }
 
     const reservation = await Reservation.create({
       userId,
@@ -157,17 +197,24 @@ const updateReservation = async (req, res) => {
       });
     }
 
+    const {
+      reservationDate,
+      reservationTime,
+      numberOfGuests,
+      specialRequest,
+    } = normalizeReservationPayload(req.body);
+
     reservation.reservationDate =
-      req.body.reservationDate || reservation.reservationDate;
+      reservationDate || reservation.reservationDate;
 
     reservation.reservationTime =
-      req.body.reservationTime || reservation.reservationTime;
+      reservationTime || reservation.reservationTime;
 
     reservation.numberOfGuests =
-      req.body.numberOfGuests || reservation.numberOfGuests;
+      numberOfGuests || reservation.numberOfGuests;
 
     reservation.specialRequest =
-      req.body.specialRequest || reservation.specialRequest;
+      specialRequest || reservation.specialRequest;
 
     await reservation.save();
     await sendReservationEmail(
