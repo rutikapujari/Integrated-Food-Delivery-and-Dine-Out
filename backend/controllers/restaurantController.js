@@ -1,4 +1,8 @@
+const mongoose = require("mongoose");
 const Restaurant = require("../models/Restaurant");
+const Order = require("../models/Order");
+const Review = require("../models/Review");
+const MenuItem = require("../models/MenuItem");
 
 const toNumber = (value) => {
   const number = Number(value);
@@ -35,6 +39,16 @@ const normalizeAddress = (address) => {
     .join(", ");
 };
 
+const firstText = (...values) => {
+  for (const value of values) {
+    const normalizedValue = String(value || "").trim();
+
+    if (normalizedValue) return normalizedValue;
+  }
+
+  return "";
+};
+
 const normalizeCoordinates = (body, fallbackCoordinates = [0, 0]) => {
   const coordinates = body.coordinates || body.location?.coordinates;
 
@@ -69,15 +83,55 @@ const normalizeCoordinates = (body, fallbackCoordinates = [0, 0]) => {
   return fallbackCoordinates;
 };
 
-const buildRestaurantPayload = (body) => ({
-  ...body,
-  cuisine: normalizeCuisine(body.cuisine),
-  address: normalizeAddress(body.address),
-  location: {
-    type: "Point",
-    coordinates: normalizeCoordinates(body),
-  },
-});
+const buildRestaurantPayload = (body, user) => {
+  const name = firstText(
+    body.name,
+    body.restaurantName,
+    body.restaurant_name,
+    body.businessName,
+    body.business_name,
+    user?.name && `${user.name}'s Restaurant`
+  );
+  const email = firstText(
+    body.email,
+    body.contactEmail,
+    body.contact_email,
+    body.restaurantEmail,
+    body.restaurant_email,
+    user?.email
+  );
+  const phone = firstText(
+    body.phone,
+    body.mobile,
+    body.contactNumber,
+    body.contact_number,
+    body.restaurantPhone,
+    body.restaurant_phone,
+    user?.phone,
+    "0000000000"
+  );
+  const address = firstText(
+    normalizeAddress(body.address),
+    body.location?.address,
+    body.fullAddress,
+    body.full_address,
+    user?.address,
+    "Address not provided"
+  );
+
+  return {
+    ...body,
+    name,
+    email,
+    phone,
+    cuisine: normalizeCuisine(body.cuisine || body.category || body.foodType),
+    address,
+    location: {
+      type: "Point",
+      coordinates: normalizeCoordinates(body),
+    },
+  };
+};
 
 const buildRestaurantUpdatePayload = (body) => {
   const payload = { ...body };
@@ -110,13 +164,27 @@ const sendControllerError = (res, error) => {
   });
 };
 
+const canManageRestaurant = (user, restaurant) => {
+  if (user?.role === "admin") return true;
+
+  return restaurant.ownerId?.toString() === user?._id?.toString();
+};
+
+const getDateRange = (days) => {
+  const parsedDays = Math.min(Math.max(toNumber(days) || 30, 1), 365);
+  const from = new Date();
+  from.setDate(from.getDate() - parsedDays);
+
+  return { from, days: parsedDays };
+};
+
 // ==============================
 // Create Restaurant
 // ==============================
 const createRestaurant = async (req, res) => {
   try {
     const restaurant = await Restaurant.create({
-      ...buildRestaurantPayload(req.body),
+      ...buildRestaurantPayload(req.body, req.user),
       ownerId: req.user?._id || req.body.ownerId,
     });
 
@@ -234,6 +302,187 @@ const getRestaurantById = async (req, res) => {
 };
 
 // ==============================
+// Restaurant Analytics Dashboard
+// ==============================
+const getRestaurantAnalytics = async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid restaurant id is required",
+      });
+    }
+
+    const restaurant = await Restaurant.findById(req.params.id);
+
+    if (!restaurant) {
+      return res.status(404).json({
+        success: false,
+        message: "Restaurant not found",
+      });
+    }
+
+    if (!canManageRestaurant(req.user, restaurant)) {
+      return res.status(403).json({
+        success: false,
+        message: "You can view analytics only for your own restaurant",
+      });
+    }
+
+    const restaurantId = new mongoose.Types.ObjectId(req.params.id);
+    const { from, days } = getDateRange(req.query.days);
+    const orderMatch = {
+      restaurantId,
+      createdAt: { $gte: from },
+    };
+
+    const [
+      orderSummary,
+      statusBreakdown,
+      topItems,
+      recentOrders,
+      reviewSummary,
+      recentReviews,
+      menuStats,
+    ] = await Promise.all([
+      Order.aggregate([
+        { $match: orderMatch },
+        {
+          $group: {
+            _id: null,
+            totalOrders: { $sum: 1 },
+            totalRevenue: { $sum: "$totalAmount" },
+            averageOrderValue: { $avg: "$totalAmount" },
+            deliveredOrders: {
+              $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] },
+            },
+            cancelledOrders: {
+              $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
+            },
+          },
+        },
+      ]),
+      Order.aggregate([
+        { $match: orderMatch },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ]),
+      Order.aggregate([
+        { $match: orderMatch },
+        { $unwind: "$items" },
+        {
+          $group: {
+            _id: "$items.menuItemId",
+            quantitySold: { $sum: "$items.quantity" },
+            revenue: {
+              $sum: { $multiply: ["$items.quantity", "$items.price"] },
+            },
+          },
+        },
+        { $sort: { quantitySold: -1 } },
+        { $limit: 5 },
+        {
+          $lookup: {
+            from: "menuitems",
+            localField: "_id",
+            foreignField: "_id",
+            as: "menuItem",
+          },
+        },
+        { $unwind: { path: "$menuItem", preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            _id: 0,
+            menuItemId: "$_id",
+            name: { $ifNull: ["$menuItem.name", "Unknown item"] },
+            quantitySold: 1,
+            revenue: 1,
+          },
+        },
+      ]),
+      Order.find(orderMatch)
+        .populate("userId", "name email")
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select("userId totalAmount status paymentMethod createdAt"),
+      Review.aggregate([
+        { $match: { restaurantId } },
+        {
+          $group: {
+            _id: null,
+            totalReviews: { $sum: 1 },
+            averageRating: { $avg: "$rating" },
+            verifiedReviews: {
+              $sum: { $cond: ["$isVerified", 1, 0] },
+            },
+          },
+        },
+      ]),
+      Review.find({ restaurantId })
+        .populate("userId", "name")
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select("userId rating comment isVerified createdAt"),
+      MenuItem.aggregate([
+        { $match: { restaurantId } },
+        {
+          $group: {
+            _id: null,
+            totalItems: { $sum: 1 },
+            availableItems: {
+              $sum: { $cond: ["$isAvailable", 1, 0] },
+            },
+            averagePrice: { $avg: "$price" },
+          },
+        },
+      ]),
+    ]);
+
+    const orders = orderSummary[0] || {};
+    const reviews = reviewSummary[0] || {};
+    const menu = menuStats[0] || {};
+
+    res.status(200).json({
+      success: true,
+      restaurant: {
+        id: restaurant._id,
+        name: restaurant.name,
+        cuisine: restaurant.cuisine,
+        rating: restaurant.rating,
+        totalReviews: restaurant.totalReviews,
+      },
+      period: {
+        days,
+        from,
+        to: new Date(),
+      },
+      summary: {
+        totalOrders: orders.totalOrders || 0,
+        deliveredOrders: orders.deliveredOrders || 0,
+        cancelledOrders: orders.cancelledOrders || 0,
+        totalRevenue: Number((orders.totalRevenue || 0).toFixed(2)),
+        averageOrderValue: Number((orders.averageOrderValue || 0).toFixed(2)),
+        totalReviews: reviews.totalReviews || 0,
+        averageRating: Number((reviews.averageRating || 0).toFixed(1)),
+        verifiedReviews: reviews.verifiedReviews || 0,
+        totalMenuItems: menu.totalItems || 0,
+        availableMenuItems: menu.availableItems || 0,
+        averageMenuPrice: Number((menu.averagePrice || 0).toFixed(2)),
+      },
+      statusBreakdown: statusBreakdown.map((item) => ({
+        status: item._id,
+        count: item.count,
+      })),
+      topItems,
+      recentOrders,
+      recentReviews,
+    });
+  } catch (error) {
+    sendControllerError(res, error);
+  }
+};
+
+// ==============================
 // Update Restaurant
 // ==============================
 const updateRestaurant = async (req, res) => {
@@ -248,8 +497,7 @@ const updateRestaurant = async (req, res) => {
     }
 
     if (
-      req.user?.role !== "admin" &&
-      restaurant.ownerId?.toString() !== req.user?._id?.toString()
+      !canManageRestaurant(req.user, restaurant)
     ) {
       return res.status(403).json({
         success: false,
@@ -306,6 +554,7 @@ module.exports = {
   getRestaurants,
   getNearbyRestaurants,
   getRestaurantById,
+  getRestaurantAnalytics,
   updateRestaurant,
   deleteRestaurant,
 };
