@@ -15,17 +15,47 @@ const getRestaurantForReview = async (restaurantId) => {
 };
 
 const getDeliveredOrderForReview = async (orderId, userId, restaurantId) => {
+  const baseQuery = {
+    userId,
+    status: "delivered",
+  };
+
+  if (restaurantId && mongoose.Types.ObjectId.isValid(restaurantId)) {
+    baseQuery.restaurantId = restaurantId;
+  }
+
   if (orderId && mongoose.Types.ObjectId.isValid(orderId)) {
     const order = await Order.findOne({
+      ...baseQuery,
       _id: orderId,
-      userId,
-      status: "delivered",
     });
 
     if (order) return order;
   }
 
+  if (baseQuery.restaurantId) {
+    return Order.findOne(baseQuery).sort({ createdAt: -1 });
+  }
+
   return null;
+};
+
+const normalizeReviewPayload = (body) => ({
+  restaurantId: body.restaurantId || body.restaurant || body.restaurant_id,
+  orderId: body.orderId || body.order || body.order_id,
+  rating: body.rating,
+  comment: body.comment || body.review || body.feedback,
+  image: body.image || body.imageUrl || body.image_url || "",
+});
+
+const validateReviewPayload = ({ restaurantId, orderId, rating, comment }) => {
+  const missingFields = [];
+
+  if (!orderId && !restaurantId) missingFields.push("orderId or restaurantId");
+  if (!rating) missingFields.push("rating");
+  if (!comment) missingFields.push("comment");
+
+  return missingFields;
 };
 
 // ======================================
@@ -68,36 +98,60 @@ const createReview = async (req, res) => {
       rating,
       comment,
       image,
-    } = req.body;
+    } = normalizeReviewPayload(req.body);
 
-    const order = await getDeliveredOrderForReview(orderId, userId, restaurantId);
+    const missingFields = validateReviewPayload({
+      restaurantId,
+      orderId,
+      rating,
+      comment,
+    });
 
-    if (!order) {
+    if (missingFields.length) {
       return res.status(400).json({
         success: false,
-        message: "A delivered order is required to review this restaurant",
+        message: `Missing required review fields: ${missingFields.join(", ")}`,
       });
     }
-    const resolvedRestaurantId = order.restaurantId;
+
+    const order = await getDeliveredOrderForReview(orderId, userId, restaurantId);
+    const restaurant = order ? null : await getRestaurantForReview(restaurantId);
+
+    if (!order && !restaurant) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid restaurantId or delivered order is required to review",
+      });
+    }
+    const resolvedRestaurantId = order?.restaurantId || restaurant._id;
+    const verifiedReview = Boolean(order);
 
     // Prevent duplicate review
-    const alreadyReviewed = await Review.findOne({
-      orderId: order._id,
-      userId,
-    });
+    const alreadyReviewed = await Review.findOne(
+      order
+        ? {
+            orderId: order._id,
+            userId,
+          }
+        : {
+            orderId: null,
+            restaurantId: resolvedRestaurantId,
+            userId,
+          }
+    );
 
     let points = 5;
 
     if ((comment || "").length >= 100) points += 5;
     if (image) points += 5;
-    points += 5; // Verified Order Bonus
+    if (verifiedReview) points += 5; // Verified Order Bonus
 
     if (alreadyReviewed) {
       alreadyReviewed.rating = rating || alreadyReviewed.rating;
       alreadyReviewed.comment = comment || alreadyReviewed.comment;
       alreadyReviewed.image = image || alreadyReviewed.image;
       alreadyReviewed.pointsAwarded = points;
-      alreadyReviewed.isVerified = true;
+      alreadyReviewed.isVerified = verifiedReview;
 
       await alreadyReviewed.save();
       await updateRestaurantRating(resolvedRestaurantId);
@@ -113,12 +167,12 @@ const createReview = async (req, res) => {
     const review = await Review.create({
       userId,
       restaurantId: resolvedRestaurantId,
-      orderId: order._id,
+      orderId: order?._id || null,
       rating,
       comment,
       image,
       pointsAwarded: points,
-      isVerified: true,
+      isVerified: verifiedReview,
     });
 
     // Update loyalty points
