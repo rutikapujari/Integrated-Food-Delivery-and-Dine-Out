@@ -2,7 +2,16 @@ const Order = require('../models/Order');
 const MenuItem = require('../models/MenuItem');
 const mongoose = require('mongoose');
 
+// TODO (Week 3): AI Suggestions enhancements
+// See: backend/docs/week-3.md
+// - Add simple caching for expensive aggregations
+// - Add response contract tests and tuning
+
 // Simple suggestion engine: recommend most-ordered menu items from user's history
+// Simple in-memory cache to reduce aggregation load for frequent calls
+const _suggestionsCache = new Map(); // key -> { expires: timestamp, data }
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
 const getSuggestions = async (req, res) => {
     try {
         const userId = req.user?._id || req.user?.id;
@@ -11,6 +20,11 @@ const getSuggestions = async (req, res) => {
             return res.status(400).json({ success: false, message: 'User authentication required' });
         }
 
+        const cacheKey = `suggestions:user:${userId}`;
+        const cached = _suggestionsCache.get(cacheKey);
+        if (cached && cached.expires > Date.now()) {
+            return res.status(200).json({ success: true, suggestions: cached.data, cached: true });
+        }
         // Aggregate ordered menu item counts for the user
         const pipeline = [
             { $match: { userId: mongoose.Types.ObjectId(userId), status: { $ne: 'cancelled' } } },
@@ -72,8 +86,13 @@ const getSuggestions = async (req, res) => {
                 })
                 .filter(Boolean);
 
+            // cache fallback results
+            _suggestionsCache.set(cacheKey, { expires: Date.now() + CACHE_TTL_MS, data: fallback });
             return res.status(200).json({ success: true, suggestions: fallback });
         }
+
+        // cache results
+        _suggestionsCache.set(cacheKey, { expires: Date.now() + CACHE_TTL_MS, data: suggestions });
 
         res.status(200).json({ success: true, suggestions });
     } catch (error) {

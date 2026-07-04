@@ -5,6 +5,11 @@ const Restaurant = require("../models/Restaurant");
 const MenuItem = require("../models/MenuItem");
 const mongoose = require("mongoose");
 
+// TODO (Week 3): Review Engine follow-ups
+// See: backend/docs/week-3.md
+// - Add tests for review lifecycle and rating aggregation
+// - Consider moderation workflow and flags for admin review
+
 const getRestaurantForReview = async (restaurantId) => {
   if (restaurantId && mongoose.Types.ObjectId.isValid(restaurantId)) {
     const restaurant = await Restaurant.findById(restaurantId);

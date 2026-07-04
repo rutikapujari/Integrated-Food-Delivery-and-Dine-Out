@@ -57,6 +57,12 @@ Install a markdown-to-pdf tool and run the command from the `backend` folder. Ex
 
 Or use the `npm` script added to `package.json` and run `npm run notes:pdf`.
 
+## Week 3
+
+- Checkout System: payments endpoints and server-side totals (see Payments).
+- Review Engine: review model, controller, and review-related endpoints.
+- AI Suggestions: `GET /api/ai/suggestions` (protected) — suggestion endpoint and controller logic.
+
 ---
 
 For a longer, more detailed PDF (diagrams, sequence flows, and examples), tell me which sections to expand and I will generate an enhanced version.

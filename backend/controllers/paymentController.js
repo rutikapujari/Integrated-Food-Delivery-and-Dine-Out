@@ -6,6 +6,11 @@ const User = require("../models/User");
 const Restaurant = require("../models/Restaurant");
 const { sendNotificationEmail } = require("../services/notificationService");
 
+// TODO (Week 3): Checkout System review
+// See: backend/docs/week-3.md
+// - Add server-side order total validation before creating Stripe session
+// - Add integration tests for checkout and verify endpoints
+
 let stripe;
 
 const getStripe = () => {
@@ -334,6 +339,27 @@ const createCheckoutSession = async (req, res) => {
         success: false,
         message: "No order found. Create an order first, then start checkout.",
       });
+    }
+
+    // Server-side validation: recompute order total from items and compare
+    try {
+      const computedTotal = (order.items || []).reduce((sum, it) => {
+        const price = typeof it.price === 'number' ? it.price : Number(it.price || 0);
+        const qty = typeof it.quantity === 'number' ? it.quantity : Number(it.quantity || 0);
+        return sum + price * qty;
+      }, 0);
+
+      // Allow small rounding difference
+      const diff = Math.abs(computedTotal - Number(order.totalAmount || 0));
+      if (diff > 0.5) {
+        return res.status(400).json({
+          success: false,
+          message: `Order total mismatch: expected ${computedTotal}, actual ${order.totalAmount}`,
+        });
+      }
+    } catch (e) {
+      // If validation fails unexpectedly, log and continue conservatively
+      console.warn('Order total validation failed', e.message || e);
     }
 
     const session = await getStripe().checkout.sessions.create({

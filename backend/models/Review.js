@@ -47,6 +47,23 @@ const reviewSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // Moderation fields (Week 3)
+    moderationStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "approved",
+    },
+
+    moderatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    moderatedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
