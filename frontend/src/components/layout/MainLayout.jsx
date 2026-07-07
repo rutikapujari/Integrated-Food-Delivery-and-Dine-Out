@@ -1,7 +1,8 @@
+import { Outlet } from "react-router-dom";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 
-function MainLayout({ children }) {
+function MainLayout() {
   return (
     <>
       <Navbar />
@@ -12,7 +13,7 @@ function MainLayout({ children }) {
           padding: "20px",
         }}
       >
-        {children}
+        <Outlet />
       </main>
 
       <Footer />
