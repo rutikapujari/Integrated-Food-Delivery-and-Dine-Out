@@ -1,31 +1,28 @@
-const reviews = [
-  {
-    id: 1,
-    name: "Asha",
-    rating: 5,
-    comment: "Fast delivery and great food quality!",
-  },
-  {
-    id: 2,
-    name: "Rohan",
-    rating: 4,
-    comment: "The burgers were fresh and the packaging was neat.",
-  },
-];
+import { useSelector } from 'react-redux'
+import ReviewCard from './ReviewCard'
+import Loader from '../common/Loader'
 
-function ReviewList() {
+function ReviewList({ restaurantId }) {
+  const { restaurantReviews, loading } = useSelector((state) => state.review)
+  const reviews = restaurantId ? restaurantReviews[restaurantId] || [] : []
+
+  if (loading) return <Loader variant="text" count={3} />
+
+  if (!reviews.length) {
+    return (
+      <div className="py-8 text-center">
+        <p className="text-muted-foreground text-sm">No reviews yet. Be the first to review!</p>
+      </div>
+    )
+  }
+
   return (
-    <div>
-      <h2>Recent Reviews</h2>
+    <div className="space-y-3">
       {reviews.map((review) => (
-        <div key={review.id} style={{ border: "1px solid #ddd", padding: "12px", marginBottom: "10px" }}>
-          <strong>{review.name}</strong>
-          <p>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</p>
-          <p>{review.comment}</p>
-        </div>
+        <ReviewCard key={review._id} review={review} />
       ))}
     </div>
-  );
+  )
 }
 
-export default ReviewList;
+export default ReviewList

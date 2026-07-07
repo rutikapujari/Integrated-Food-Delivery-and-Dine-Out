@@ -1,33 +1,19 @@
-import CartItem from "./CartItem";
-
-const cartItems = [
-  {
-    id: 1,
-    name: "Veg Burger",
-    price: 149,
-    quantity: 2,
-    image: "https://via.placeholder.com/120"
-  },
-  {
-    id: 2,
-    name: "Pizza",
-    price: 299,
-    quantity: 1,
-    image: "https://via.placeholder.com/120"
-  }
-];
+import { useSelector } from 'react-redux'
+import CartItem from './CartItem'
+import Loader from '../common/Loader'
 
 function CartList() {
+  const { items, loading } = useSelector((state) => state.cart)
+
+  if (loading) return <Loader variant="card" count={3} />
+
   return (
-    <div>
-      {cartItems.map((item) => (
-        <CartItem
-          key={item.id}
-          item={item}
-        />
+    <div className="space-y-4">
+      {items.map((item) => (
+        <CartItem key={item.menuItemId} item={item} />
       ))}
     </div>
-  );
+  )
 }
 
-export default CartList;
+export default CartList

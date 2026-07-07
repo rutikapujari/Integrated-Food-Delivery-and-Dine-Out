@@ -1,13 +1,20 @@
-import { Navigate } from "react-router-dom";
+import { useSelector } from 'react-redux'
+import { Navigate, useLocation } from 'react-router-dom'
+import Loader from '../common/Loader'
 
 function ProtectedRoute({ children }) {
-  const isLoggedIn = localStorage.getItem("token");
+  const { isAuthenticated, loading } = useSelector((state) => state.auth)
+  const location = useLocation()
 
-  if (!isLoggedIn) {
-    return <Navigate to="/login" replace />;
+  if (loading && !isAuthenticated) {
+    return <Loader variant="page" />
   }
 
-  return children;
+  if (!isAuthenticated) {
+    return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />
+  }
+
+  return children
 }
 
-export default ProtectedRoute;
+export default ProtectedRoute
