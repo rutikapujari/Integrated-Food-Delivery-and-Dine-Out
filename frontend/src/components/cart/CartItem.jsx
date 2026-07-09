@@ -15,13 +15,11 @@ function CartItem({ item, onQuantityChange, onRemove }) {
     setRemoving(true)
     setTimeout(() => {
       dispatch(removeFromCart(item.menuItemId))
+
+
+      
     }, 200)
   }
-
-
-
-
-  
   const handleImageError = () => {
     setImageError(true)
   }
