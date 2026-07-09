@@ -17,7 +17,7 @@ function CartItem({ item, onQuantityChange, onRemove }) {
       dispatch(removeFromCart(item.menuItemId))
 
 
-      
+
     }, 200)
   }
   const handleImageError = () => {
@@ -39,6 +39,11 @@ function CartItem({ item, onQuantityChange, onRemove }) {
             onError={handleImageError}
             className="w-full h-32 rounded-lg object-cover"
           />
+
+
+
+
+          
         ) : (
           <div className="w-full h-32 rounded-lg bg-gray-200 flex items-center justify-center">
             <div className="text-center">
