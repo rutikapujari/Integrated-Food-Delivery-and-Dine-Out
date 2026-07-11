@@ -4,11 +4,14 @@ import { motion } from 'framer-motion'
 import { updateCartQuantity, removeFromCart } from '../../redux/cartSlice'
 import { formatCurrency } from '../../utils/formatCurrency'
 import { Trash } from '../../utils/icons'
+import { getMenuFallbackImage, resolveImageUrl } from '../../utils/imageFallbacks'
 import AddToCartButton from '../menu/AddToCartButton'
 
 function CartItem({ item, onQuantityChange, onRemove }) {
   const dispatch = useDispatch()
   const [removing, setRemoving] = useState(false)
+  const fallbackImage = getMenuFallbackImage(item)
+  const [imageSrc, setImageSrc] = useState(resolveImageUrl(item.image) || fallbackImage)
 
   const handleRemove = () => {
     setRemoving(true)
@@ -25,8 +28,9 @@ function CartItem({ item, onQuantityChange, onRemove }) {
       className="flex gap-4 p-4 bg-white border border-border rounded-[var(--radius-md)]"
     >
       <img
-        src={item.image}
+        src={imageSrc}
         alt={item.name}
+        onError={() => setImageSrc(fallbackImage)}
         className="w-20 h-20 rounded-lg object-cover shrink-0"
       />
       <div className="flex-1 min-w-0">

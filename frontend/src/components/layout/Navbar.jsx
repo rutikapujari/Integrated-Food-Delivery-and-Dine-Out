@@ -30,14 +30,15 @@ function Navbar({ onMenuOpen }) {
   }
 
   return (
-    <nav className="sticky top-0 z-50 bg-surface-bg/95 backdrop-blur-md border-b border-border">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between gap-4">
-        <button className="md:hidden p-2 hover:bg-surface-muted rounded-lg" onClick={onMenuOpen}>
+    <nav className="sticky top-0 z-50 border-b border-white/70 bg-white/90 shadow-sm shadow-slate-200/60 backdrop-blur-xl">
+      <div className="mx-auto flex h-18 max-w-7xl items-center justify-between gap-4 px-4 md:px-8">
+        <button className="rounded-lg p-2 transition hover:bg-primary-light md:hidden" onClick={onMenuOpen} aria-label="Open menu">
           <List className="w-6 h-6" />
         </button>
 
-        <Link to="/" className="font-display text-primary text-2xl tracking-wider shrink-0">
+        <Link to="/" className="shrink-0 font-display text-3xl tracking-wider text-slate-950">
           FoodHub
+          <span className="text-primary">.</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-1">
@@ -49,7 +50,7 @@ function Navbar({ onMenuOpen }) {
             <Link
               key={link.to}
               to={link.to}
-              className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors rounded-lg hover:bg-surface-muted"
+              className="rounded-full px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-primary-light hover:text-primary"
             >
               {link.label}
             </Link>
@@ -64,20 +65,21 @@ function Navbar({ onMenuOpen }) {
               placeholder="Search restaurants or dishes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-full border border-border bg-white text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
+              className="h-11 w-full rounded-full border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm text-foreground shadow-inner shadow-slate-200/40 placeholder:text-muted-foreground focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </form>
         </div>
 
         <div className="flex items-center gap-1">
           <button
-            className="sm:hidden p-2 hover:bg-surface-muted rounded-lg"
+            className="rounded-lg p-2 transition hover:bg-primary-light sm:hidden"
             onClick={() => setShowSearch(!showSearch)}
+            aria-label="Search"
           >
             <MagnifyingGlass className="w-5 h-5" />
           </button>
 
-          <Link to="/cart" className="relative p-2 hover:bg-surface-muted rounded-lg">
+          <Link to="/cart" className="relative rounded-lg p-2 transition hover:bg-primary-light" aria-label="Cart">
             <ShoppingCart className="w-5 h-5" />
             {items.length > 0 && (
               <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-destructive text-white text-xs font-bold rounded-full flex items-center justify-center">
@@ -99,12 +101,12 @@ function Navbar({ onMenuOpen }) {
 
           <div className="relative">
             <button
-              className="p-2 hover:bg-surface-muted rounded-lg flex items-center gap-2"
+              className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm transition hover:border-primary/30 hover:bg-primary-light"
               onClick={() => { setShowUserMenu(!showUserMenu); setShowNotifDropdown(false) }}
             >
               <User className="w-5 h-5" />
-              <span className="hidden md:inline text-sm font-medium truncate max-w-[100px]">
-                {isAuthenticated ? user?.name : ''}
+              <span className="hidden max-w-[100px] truncate text-sm font-bold md:inline">
+                {isAuthenticated ? user?.name : 'Login'}
               </span>
             </button>
             <AnimatePresence>
@@ -113,12 +115,12 @@ function Navbar({ onMenuOpen }) {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 8 }}
-                  className="absolute right-0 mt-2 w-48 bg-white border border-border rounded-[var(--radius-lg)] shadow-[var(--shadow-modal)] py-2"
+                  className="absolute right-0 mt-2 w-52 rounded-lg border border-slate-100 bg-white py-2 shadow-modal"
                 >
                   {isAuthenticated ? (
                     <>
                       <div className="px-4 py-2 border-b border-border">
-                        <p className="font-semibold text-sm truncate">{user?.name}</p>
+                        <p className="truncate text-sm font-semibold">{user?.name}</p>
                         <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                       </div>
                       <Link to="/dashboard" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-surface-muted" onClick={() => setShowUserMenu(false)}>

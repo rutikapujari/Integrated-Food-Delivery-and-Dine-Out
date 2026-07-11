@@ -1,12 +1,22 @@
+import { useEffect, useState } from 'react'
 import { Star } from '../../utils/icons'
 import { formatCurrency } from '../../utils/formatCurrency'
+import { getRestaurantFallbackImage, resolveImageUrl } from '../../utils/imageFallbacks'
 
 function RestaurantHeader({ restaurant, reviewCount }) {
+  const fallbackImage = getRestaurantFallbackImage(restaurant)
+  const [imageSrc, setImageSrc] = useState(resolveImageUrl(restaurant.image) || fallbackImage)
+
+  useEffect(() => {
+    setImageSrc(resolveImageUrl(restaurant.image) || fallbackImage)
+  }, [restaurant.image, fallbackImage])
+
   return (
     <div className="relative h-64 md:h-80 overflow-hidden">
       <img
-        src={restaurant.image}
+        src={imageSrc}
         alt={restaurant.name}
+        onError={() => setImageSrc(fallbackImage)}
         className="w-full h-full object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />

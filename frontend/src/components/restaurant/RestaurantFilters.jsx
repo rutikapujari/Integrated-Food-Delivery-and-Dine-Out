@@ -20,11 +20,11 @@ function RestaurantFilters() {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3 mb-6">
+    <div className="mb-4 flex flex-wrap items-center gap-3">
       <select
         value={filters.cuisine || ''}
         onChange={(e) => handleChange('cuisine', e.target.value)}
-        className="h-10 px-4 rounded-full border border-border bg-white text-sm text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
+        className="h-11 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
       >
         <option value="">All Cuisines</option>
         {CUISINE_TYPES.map((c) => (
@@ -37,10 +37,10 @@ function RestaurantFilters() {
           <button
             key={r}
             onClick={() => handleChange('rating', filters.rating === String(r) ? null : String(r))}
-            className={`flex items-center gap-1 h-10 px-3 rounded-full border text-sm font-semibold transition-colors ${
+            className={`flex h-11 items-center gap-1 rounded-lg border px-3 text-sm font-bold transition-colors ${
               filters.rating === String(r)
                 ? 'bg-primary text-white border-primary'
-                : 'border-border hover:bg-surface-muted'
+                : 'border-slate-200 bg-white hover:bg-primary-light'
             }`}
           >
             {r}+ <Star className="w-3.5 h-3.5" weight="fill" />
@@ -51,7 +51,7 @@ function RestaurantFilters() {
       <select
         value={filters.deliveryTime || ''}
         onChange={(e) => handleChange('deliveryTime', e.target.value)}
-        className="h-10 px-4 rounded-full border border-border bg-white text-sm text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
+        className="h-11 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
       >
         <option value="">Any Time</option>
         <option value="30">Under 30 min</option>
@@ -62,7 +62,7 @@ function RestaurantFilters() {
       {hasFilters && (
         <button
           onClick={handleClear}
-          className="flex items-center gap-1 h-10 px-4 rounded-full text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+          className="flex h-11 items-center gap-1 rounded-lg px-4 text-sm font-bold text-destructive transition-colors hover:bg-destructive/10"
         >
           <X className="w-4 h-4" /> Clear
         </button>

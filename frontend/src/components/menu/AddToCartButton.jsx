@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { addToCart, updateCartQuantity, removeFromCart } from '../../redux/cartSlice'
 import { notify } from '../../utils/toast'
 import { Plus, Minus } from '../../utils/icons'
+import { getMenuFallbackImage, resolveImageUrl } from '../../utils/imageFallbacks'
 import Modal from '../common/Modal'
 import Button from '../common/Button'
 
@@ -33,7 +34,7 @@ function AddToCartButton({ item, variant = 'icon', size = 'md' }) {
       menuItemId: menuItem._id,
       name: menuItem.name,
       price: menuItem.price,
-      image: menuItem.image,
+      image: resolveImageUrl(menuItem.image) || getMenuFallbackImage(menuItem),
       restaurantId: menuItem.restaurantId,
       restaurantName: menuItem.restaurantName,
       quantity: 1,

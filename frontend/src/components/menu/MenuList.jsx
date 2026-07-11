@@ -35,7 +35,7 @@ function MenuList({ restaurantId, category, showCategories = false }) {
     dispatch(fetchMenuItems({ restaurantId }))
   }, [dispatch, restaurantId])
 
-  if (loading) return <Loader variant="card" count={6} />
+  if (loading) return <Loader variant="card" count={9} />
   if (error) return <ErrorState message={error} onRetry={() => dispatch(fetchMenuItems({ restaurantId }))} />
 
   const filtered = category ? items.filter((i) => i.category === category) : items
@@ -59,7 +59,7 @@ function MenuList({ restaurantId, category, showCategories = false }) {
           return <MenuCategory key={cat} category={cat} items={catItems} />
         })}
         {categories.length === 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
             {filtered.map((item) => (
               <MenuCard key={item._id} item={item} />
             ))}
@@ -70,7 +70,7 @@ function MenuList({ restaurantId, category, showCategories = false }) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
       {filtered.map((item) => (
         <MenuCard key={item._id} item={item} />
       ))}

@@ -59,12 +59,23 @@ function AdminDashboardPage() {
 
   return (
     <motion.div {...pageTransition}>
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-slate-800 mb-1">Dashboard Overview</h2>
-        <p className="text-muted-foreground">Real-time snapshot of your platform</p>
+      <div className="mb-8 overflow-hidden rounded-xl border border-white/80 bg-white/80 p-6 shadow-card backdrop-blur">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-primary">Live operations</p>
+            <h2 className="mt-2 text-3xl font-bold text-slate-900">Dashboard Overview</h2>
+            <p className="mt-2 text-muted-foreground">Real-time snapshot of your platform performance</p>
+          </div>
+          <div className="rounded-lg border border-primary-100 bg-primary-light px-4 py-3 text-sm font-semibold text-primary-dark">
+            {error ? 'Data needs attention' : 'Updated just now'}
+          </div>
+        </div>
+        {error && (
+          <p className="mt-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm font-semibold text-destructive">{error}</p>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="Total Revenue"
           value={formatCurrency(stats.revenue)}
@@ -93,13 +104,21 @@ function AdminDashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-          <h3 className="font-semibold text-slate-800 mb-4">Revenue Overview</h3>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="rounded-xl border border-white/80 bg-white/90 p-6 shadow-card backdrop-blur">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Last 6 months</p>
+              <h3 className="mt-1 text-lg font-bold text-slate-900">Revenue Overview</h3>
+            </div>
+          </div>
           <RevenueChart data={revenueData} loading={loading} />
         </div>
-        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-          <h3 className="font-semibold text-slate-800 mb-4">Recent Orders</h3>
+        <div className="rounded-xl border border-white/80 bg-white/90 p-6 shadow-card backdrop-blur">
+          <div className="mb-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Fulfillment queue</p>
+            <h3 className="mt-1 text-lg font-bold text-slate-900">Recent Orders</h3>
+          </div>
           <RecentOrdersTable orders={recentOrders} loading={loading} />
         </div>
       </div>

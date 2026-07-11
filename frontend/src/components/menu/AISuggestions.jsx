@@ -5,17 +5,26 @@ import { motion } from 'framer-motion'
 import { aiService } from '../../services/aiService'
 import { formatCurrency } from '../../utils/formatCurrency'
 import { fadeInUp, staggerContainer } from '../../utils/motion'
+import { getMenuFallbackImage, resolveImageUrl } from '../../utils/imageFallbacks'
 import { Sparkle } from '@phosphor-icons/react'
 import Loader from '../common/Loader'
 
 function AISuggestionCard({ item, onClick }) {
+  const fallbackImage = getMenuFallbackImage(item)
+  const [imageSrc, setImageSrc] = useState(resolveImageUrl(item.image) || fallbackImage)
+
   return (
     <motion.div
       variants={fadeInUp}
       onClick={onClick}
       className="shrink-0 w-64 bg-white border border-border rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden cursor-pointer hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-1 transition-all duration-200 snap-start"
     >
-      <img src={item.image} alt={item.name} className="w-full h-36 object-cover" />
+      <img
+        src={imageSrc}
+        alt={item.name}
+        onError={() => setImageSrc(fallbackImage)}
+        className="w-full h-36 object-cover"
+      />
       <div className="p-3">
         <h4 className="font-semibold text-sm truncate">{item.name}</h4>
         <p className="text-primary font-bold text-sm mt-1">{formatCurrency(item.price)}</p>

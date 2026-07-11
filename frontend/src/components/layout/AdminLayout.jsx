@@ -23,35 +23,41 @@ function AdminLayout() {
   const pageTitle = pageTitles[location.pathname] || 'Admin'
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,146,60,0.14),transparent_32rem),linear-gradient(180deg,#fff7ed_0%,#f8fafc_34%,#f1f5f9_100%)]">
       <AdminSidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
 
       <div className="flex-1 lg:ml-64">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-20">
+        <header className="sticky top-0 z-20 border-b border-white/70 bg-white/85 px-4 py-3 shadow-sm shadow-slate-200/60 backdrop-blur md:px-6">
+          <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
-              className="lg:hidden p-2 hover:bg-slate-100 rounded-lg"
+              className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-primary/30 hover:bg-primary-light lg:hidden"
               onClick={() => setMobileOpen(true)}
+              aria-label="Open admin menu"
             >
               <List className="w-5 h-5" />
             </button>
-            <h1 className="text-lg md:text-xl font-semibold text-slate-800">{pageTitle}</h1>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">FoodHub Admin</p>
+              <h1 className="text-xl font-bold text-slate-900 md:text-2xl">{pageTitle}</h1>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
               <NotificationBell unread={unread} onClick={() => setNotifOpen(!notifOpen)} />
               <NotificationDropdown isOpen={notifOpen} onClose={() => setNotifOpen(false)} />
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-semibold">
+            <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1 shadow-sm">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-dark text-sm font-bold text-white shadow-sm shadow-primary/30">
                 {user?.name?.[0]?.toUpperCase() || 'A'}
               </div>
-              <span className="text-sm font-medium text-slate-700 hidden sm:block">{user?.name}</span>
+              <span className="hidden max-w-36 truncate pr-2 text-sm font-semibold text-slate-700 sm:block">{user?.name || 'Admin'}</span>
             </div>
+          </div>
           </div>
         </header>
 
-        <main className="p-4 md:p-6">
+        <main className="p-4 md:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

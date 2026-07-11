@@ -1,10 +1,18 @@
+import React from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { cardHover } from '../../utils/motion'
 import { Star } from '../../utils/icons'
+import { getRestaurantFallbackImage, resolveImageUrl } from '../../utils/imageFallbacks'
 
 function RestaurantCard({ restaurant, onClick }) {
   const navigate = useNavigate()
+  const fallbackImage = getRestaurantFallbackImage(restaurant)
+  const [imageSrc, setImageSrc] = React.useState(resolveImageUrl(restaurant.image) || fallbackImage)
+
+  React.useEffect(() => {
+    setImageSrc(resolveImageUrl(restaurant.image) || fallbackImage)
+  }, [restaurant.image, fallbackImage])
 
   const handleClick = () => {
     if (onClick) onClick()
@@ -17,36 +25,37 @@ function RestaurantCard({ restaurant, onClick }) {
       initial="rest"
       whileHover="hover"
       onClick={handleClick}
-      className="bg-white border border-border rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] transition-all duration-200 hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-1 cursor-pointer overflow-hidden"
+      className="group cursor-pointer overflow-hidden rounded-xl border border-slate-100 bg-white shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
     >
       <div className="relative">
         <img
-          src={restaurant.image}
+          src={imageSrc}
           alt={restaurant.name}
-          className="w-full h-48 object-cover"
+          onError={() => setImageSrc(fallbackImage)}
+          className="h-52 w-full object-cover transition duration-500 group-hover:scale-105"
         />
         {restaurant.isOpen === false && (
-          <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
-            <span className="text-foreground font-semibold bg-white/90 px-4 py-2 rounded-full text-sm">Currently Closed</span>
+          <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+            <span className="rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-foreground">Currently Closed</span>
           </div>
         )}
-        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-md text-xs font-semibold">
+        <div className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-bold shadow-sm backdrop-blur-sm">
           {restaurant.deliveryTime} min
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="p-5">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-lg truncate">{restaurant.name}</h3>
-          <span className="flex items-center gap-1 text-sm font-semibold bg-success-light text-success px-2 py-0.5 rounded-md shrink-0">
+          <h3 className="truncate text-xl font-bold text-slate-950">{restaurant.name}</h3>
+          <span className="flex shrink-0 items-center gap-1 rounded-full bg-success-light px-2.5 py-1 text-sm font-bold text-success">
             <Star className="w-4 h-4" weight="fill" /> {restaurant.rating}
           </span>
         </div>
-        <p className="text-muted-foreground text-sm mt-1">
+        <p className="mt-2 text-sm font-medium text-muted-foreground">
           {Array.isArray(restaurant.cuisine) ? restaurant.cuisine.join(', ') : restaurant.cuisine}
         </p>
         {restaurant.address && (
-          <p className="text-muted-foreground text-xs mt-1 truncate">{restaurant.address}</p>
+          <p className="mt-2 truncate text-xs text-muted-foreground">{restaurant.address}</p>
         )}
       </div>
     </motion.div>
