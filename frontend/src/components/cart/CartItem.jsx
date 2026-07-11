@@ -1,17 +1,21 @@
-import { useState } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { useEffect, useState } from 'react'
+import { useDispatch } from 'react-redux'
 import { motion } from 'framer-motion'
-import { updateCartQuantity, removeFromCart } from '../../redux/cartSlice'
+import { removeFromCart } from '../../redux/cartSlice'
 import { formatCurrency } from '../../utils/formatCurrency'
 import { Trash } from '../../utils/icons'
 import { getMenuFallbackImage, resolveImageUrl } from '../../utils/imageFallbacks'
 import AddToCartButton from '../menu/AddToCartButton'
 
-function CartItem({ item, onQuantityChange, onRemove }) {
+function CartItem({ item }) {
   const dispatch = useDispatch()
   const [removing, setRemoving] = useState(false)
   const fallbackImage = getMenuFallbackImage(item)
   const [imageSrc, setImageSrc] = useState(resolveImageUrl(item.image) || fallbackImage)
+
+  useEffect(() => {
+    setImageSrc(resolveImageUrl(item.image) || fallbackImage)
+  }, [item.image, fallbackImage])
 
   const handleRemove = () => {
     setRemoving(true)
@@ -23,36 +27,41 @@ function CartItem({ item, onQuantityChange, onRemove }) {
   return (
     <motion.div
       initial={false}
-      animate={removing ? { opacity: 0, x: 40 } : { opacity: 1, x: 0 }}
+      animate={removing ? { opacity: 0, scale: 0.95 } : { opacity: 1, scale: 1 }}
       transition={{ duration: 0.2 }}
-      className="flex gap-4 p-4 bg-white border border-border rounded-[var(--radius-md)]"
+      className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-border bg-white p-4 transition-shadow hover:shadow-md"
     >
-      <img
-        src={imageSrc}
-        alt={item.name}
-        onError={() => setImageSrc(fallbackImage)}
-        className="w-20 h-20 rounded-lg object-cover shrink-0"
-      />
-      <div className="flex-1 min-w-0">
-        <h4 className="font-semibold truncate">{item.name}</h4>
-        {item.restaurantName && (
-          <p className="text-muted-foreground text-sm">{item.restaurantName}</p>
-        )}
-        <div className="flex items-center justify-between mt-2">
-          <span className="text-primary font-bold">{formatCurrency(item.price)}</span>
-          <AddToCartButton
-            item={{ _id: item.menuItemId, price: item.price, restaurantId: item.restaurantId }}
-            variant="full"
-            size="sm"
-          />
-        </div>
+      <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-orange-50 to-slate-100">
+        <img
+          src={imageSrc}
+          alt={item.name}
+          onError={() => setImageSrc(fallbackImage)}
+          className="h-32 w-full object-cover"
+        />
+        <button
+          onClick={handleRemove}
+          className="absolute right-2 top-2 rounded-lg bg-white/90 p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          aria-label={`Remove ${item.name}`}
+        >
+          <Trash className="h-4 w-4" />
+        </button>
       </div>
-      <button
-        onClick={handleRemove}
-        className="self-start p-1.5 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-destructive/10"
-      >
-        <Trash className="w-4 h-4" />
-      </button>
+
+      <div className="min-w-0 flex-1">
+        <h4 className="truncate font-semibold">{item.name}</h4>
+        {item.restaurantName && (
+          <p className="truncate text-sm text-muted-foreground">{item.restaurantName}</p>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-bold text-primary">{formatCurrency(item.price)}</span>
+        <AddToCartButton
+          item={{ _id: item.menuItemId, price: item.price, restaurantId: item.restaurantId }}
+          variant="full"
+          size="sm"
+        />
+      </div>
     </motion.div>
   )
 }

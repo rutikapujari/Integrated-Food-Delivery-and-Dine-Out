@@ -8,7 +8,7 @@ function CartList() {
   if (loading) return <Loader variant="card" count={3} />
 
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {items.map((item) => (
         <CartItem key={item.menuItemId} item={item} />
       ))}
