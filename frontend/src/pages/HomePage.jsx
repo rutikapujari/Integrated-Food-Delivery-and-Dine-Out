@@ -16,16 +16,19 @@ const features = [
   {
     icon: Truck,
     title: 'Fast Delivery',
+    label: '30 min average',
     description: 'Get your food delivered hot and fresh in under 30 minutes by our dedicated delivery partners.',
   },
   {
     icon: Clock,
     title: 'Live Tracking',
+    label: 'Realtime GPS',
     description: 'Track your order in real-time from restaurant to doorstep with live GPS updates.',
   },
   {
     icon: CreditCard,
     title: 'Secure Payment',
+    label: 'UPI, cards, COD',
     description: 'Multiple payment options including UPI, cards, and cash on delivery with secure checkout.',
   },
 ]
@@ -57,17 +60,25 @@ const dishes = [
   },
 ]
 
-function FeatureCard({ icon: Icon, title, description }) {
+function FeatureCard({ icon: Icon, title, label, description, index }) {
   return (
     <motion.div
       variants={fadeInUp}
-      className="rounded-xl border border-slate-100 bg-white p-7 text-center shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-card-hover"
+      className="group relative overflow-hidden rounded-xl border border-white/80 bg-white p-6 text-left shadow-card transition duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-card-hover"
     >
-      <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-primary-light text-primary">
-        <Icon className="h-8 w-8" weight="duotone" />
+      <div className="absolute right-4 top-4 font-display text-6xl leading-none text-slate-100 transition group-hover:text-primary-light">
+        0{index + 1}
       </div>
-      <h3 className="mb-2 text-lg font-bold text-slate-900">{title}</h3>
-      <p className="text-sm leading-6 text-muted-foreground">{description}</p>
+      <div className="relative">
+        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-lg bg-primary-light text-primary ring-8 ring-primary-light/45">
+          <Icon className="h-7 w-7" weight="duotone" />
+        </div>
+        <span className="mb-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+          {label}
+        </span>
+        <h3 className="mb-3 text-xl font-bold text-slate-950">{title}</h3>
+        <p className="text-sm leading-6 text-muted-foreground">{description}</p>
+      </div>
     </motion.div>
   )
 }
@@ -243,23 +254,69 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="bg-slate-50 py-20">
-        <div className="mx-auto max-w-7xl px-4 md:px-8">
-          <h2 className="mb-4 text-center font-display text-4xl text-slate-950 md:text-5xl">Why FoodHub?</h2>
-          <p className="mx-auto mb-12 max-w-xl text-center text-muted-foreground">
-            A complete food delivery and dine-out experience designed for speed, comfort, and trust.
-          </p>
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-          >
-            {features.map((f) => (
-              <FeatureCard key={f.title} {...f} />
-            ))}
-          </motion.div>
+      <section className="relative overflow-hidden bg-slate-50 py-16 md:py-20">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+        <div className="absolute left-0 top-0 h-full w-1/3 bg-gradient-to-br from-primary-light via-white/40 to-transparent" />
+        <div className="relative mx-auto max-w-7xl px-4 md:px-8">
+          <div className="mb-10 grid items-end gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <div>
+              <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-primary">Why choose us</p>
+              <h2 className="font-display text-5xl leading-none text-slate-950 md:text-6xl">Why FoodHub?</h2>
+            </div>
+            <p className="max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
+              A complete food delivery and dine-out experience designed for speed, comfort, and trust, from restaurant discovery to secure checkout.
+            </p>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-80px' }}
+              className="grid grid-cols-1 gap-5 md:grid-cols-3 lg:grid-cols-1"
+            >
+              {features.map((f, index) => (
+                <FeatureCard key={f.title} {...f} index={index} />
+              ))}
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.45 }}
+              className="relative min-h-[420px] overflow-hidden rounded-xl bg-slate-950 p-6 text-white shadow-2xl shadow-slate-300/80 md:p-8"
+            >
+              <img
+                src="https://images.unsplash.com/photo-1606787366850-de6330128bfc?auto=format&fit=crop&w=1000&q=85"
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover opacity-35"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.5)_0%,rgba(15,23,42,0.96)_78%)]" />
+              <div className="relative flex h-full min-h-[360px] flex-col justify-between">
+                <div className="flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold backdrop-blur">
+                  <CheckCircle className="h-5 w-5 text-primary-300" weight="fill" />
+                  Trusted food experience
+                </div>
+                <div>
+                  <h3 className="font-display text-5xl leading-none md:text-6xl">Fresh food, clear updates, easy payment.</h3>
+                  <div className="mt-6 grid grid-cols-3 gap-3">
+                    {[
+                      ['8K+', 'Orders'],
+                      ['120+', 'Partners'],
+                      ['4.8', 'Rating'],
+                    ].map(([value, label]) => (
+                      <div key={label} className="rounded-lg border border-white/10 bg-white/10 p-4 backdrop-blur">
+                        <p className="text-2xl font-bold">{value}</p>
+                        <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/55">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
