@@ -109,7 +109,7 @@ function AdminUsersPage() {
                         className="h-9 px-3 rounded-lg border border-slate-200 text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white disabled:opacity-50"
                       >
                         <option value="customer">Customer</option>
-                        <option value="restaurant_admin">Restaurant</option>
+                        <option value="restaurant">Restaurant</option>
                         <option value="admin">Admin</option>
                       </select>
                     </td>

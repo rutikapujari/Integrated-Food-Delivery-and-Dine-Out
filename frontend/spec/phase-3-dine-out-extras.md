@@ -1,14 +1,27 @@
 # Phase 3 — Dine-Out + Extras (Agent-Ready Spec)
 
-> **Status:** Planned (after Phase 2 complete)
+> **Status:** Pending
 > **Features:** 5 | **Est. Files:** ~20
+
+---
+
+## Build Order
+
+Each feature is independent — can be built in any order.
+
+```
+Feature 1: Table Reservations      (5 files) → depends on Phase 1
+Feature 2: AI Menu Suggestions     (2 files) → depends on Phase 1
+Feature 3: Full Review System      (4 files) → depends on Phase 1
+Feature 4: Support Tickets         (5 files) → depends on Phase 1
+Feature 5: Notification Center     (4 files) → depends on Redux (reservation, review, support slices)
+```
 
 ---
 
 ## Prerequisites
 
 - Phase 1 complete (core customer flow, Redux, API layer)
-- Phase 2 complete (admin dashboard)
 
 ---
 

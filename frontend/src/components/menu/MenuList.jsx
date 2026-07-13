@@ -4,28 +4,11 @@ import { fetchMenuItems } from '../../redux/menuSlice'
 import MenuCard from './MenuCard'
 import MenuCategory from './MenuCategory'
 import Loader from '../common/Loader'
-import Button from '../common/Button'
+import EmptyState from '../common/EmptyState'
+import ErrorState from '../common/ErrorState'
 import { ForkKnife } from '../../utils/icons'
 
-function EmptyState({ icon: Icon, title, description }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <Icon className="w-16 h-16 text-border mb-4" weight="duotone" />
-      <h3 className="text-lg font-semibold mb-1">{title}</h3>
-      <p className="text-muted-foreground max-w-sm mb-6">{description}</p>
-    </div>
-  )
-}
 
-function ErrorState({ message, onRetry }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <h3 className="text-lg font-semibold mb-1">Something went wrong</h3>
-      <p className="text-muted-foreground max-w-sm mb-6">{message}</p>
-      <Button variant="outline" onClick={onRetry}>Try Again</Button>
-    </div>
-  )
-}
 
 function MenuList({ restaurantId, category, showCategories = false }) {
   const dispatch = useDispatch()

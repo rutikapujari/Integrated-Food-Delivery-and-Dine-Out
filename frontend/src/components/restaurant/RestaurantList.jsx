@@ -1,33 +1,17 @@
 import { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { fetchRestaurants } from '../../redux/restaurantSlice'
 import RestaurantCard from './RestaurantCard'
 import Pagination from '../common/Pagination'
 import Loader from '../common/Loader'
+import EmptyState from '../common/EmptyState'
+import ErrorState from '../common/ErrorState'
 import Button from '../common/Button'
-import { Storefront } from '../../utils/icons'
+import { Storefront, Funnel, X } from 'lucide-react'
 
-function EmptyState({ icon: Icon, title, description, action }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <Icon className="w-16 h-16 text-border mb-4" weight="duotone" />
-      <h3 className="text-lg font-semibold mb-1">{title}</h3>
-      <p className="text-muted-foreground max-w-sm mb-6">{description}</p>
-      {action && <Button onClick={action.onClick}>{action.label}</Button>}
-    </div>
-  )
-}
 
-function ErrorState({ message, onRetry }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <h3 className="text-lg font-semibold mb-1">Something went wrong</h3>
-      <p className="text-muted-foreground max-w-sm mb-6">{message}</p>
-      <Button variant="outline" onClick={onRetry}>Try Again</Button>
-    </div>
-  )
-}
 
 function RestaurantList({ limit, showPagination = true }) {
   const dispatch = useDispatch()
@@ -60,20 +44,53 @@ function RestaurantList({ limit, showPagination = true }) {
   }
 
   return (
-    <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {list.map((r) => (
-          <RestaurantCard key={r._id} restaurant={r} />
-        ))}
-      </div>
-      {showPagination && pagination.pages > 1 && (
-        <Pagination
-          currentPage={pagination.page}
-          totalPages={pagination.pages}
-          onPageChange={(page) => dispatch({ type: 'restaurant/setPage', payload: page })}
-        />
-      )}
-    </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <AnimatePresence mode="popLayout">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        >
+          {list.map((r, index) => (
+            <motion.div
+              key={r._id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.3, delay: index * 0.05 }}
+              whileHover={{ scale: 1.05, y: -5 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate(`/restaurants/${r._id}`)}
+              className="cursor-pointer"
+            >
+              <RestaurantCard restaurant={r} />
+            </motion.div>
+          ))}
+        </motion.div>
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showPagination && pagination.pages > 1 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+          >
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.pages}
+              onPageChange={(page) => dispatch({ type: 'restaurant/setPage', payload: page })}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }
 

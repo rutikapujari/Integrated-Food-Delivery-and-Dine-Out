@@ -8,5 +8,4 @@ export const adminService = {
   getRestaurants: (params) => api.get('/admin/restaurants', { params }),
   updateOrderStatus: (id, status) => api.put(`/orders/${id}/status`, { status }),
   deleteRestaurant: (id) => api.delete(`/restaurants/${id}`),
-  updateUserRole: (userId, role) => api.put(`/admin/users/${userId}/role`, { role }),
 }
