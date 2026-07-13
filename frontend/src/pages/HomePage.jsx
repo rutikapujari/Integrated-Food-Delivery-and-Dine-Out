@@ -9,7 +9,8 @@ import Button from '../components/common/Button'
 import AISuggestions from '../components/menu/AISuggestions'
 import {
   Storefront, ArrowRight, Truck, Clock, CreditCard, Star, MapPin,
-  ForkKnife, CheckCircle, Timer, Calendar,
+  ForkKnife, CheckCircle, Timer, Calendar, Pizza, Hamburger, Coffee, Cake,
+  Heart, Handbag, ShieldCheck,
 } from '../utils/icons'
 
 const features = [
@@ -39,24 +40,59 @@ const dishes = [
     price: '₹249',
     image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=500&q=80',
     accent: 'bg-orange-50',
+    meta: 'Creamy Italian',
   },
   {
     name: 'Garden Salad',
     price: '₹189',
     image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=500&q=80',
     accent: 'bg-emerald-50',
+    meta: 'Fresh greens',
   },
   {
     name: 'Spicy Biryani',
     price: '₹299',
     image: 'https://images.unsplash.com/photo-1563379091339-03246963d96c?auto=format&fit=crop&w=500&q=80',
     accent: 'bg-amber-50',
+    meta: 'Chef special',
   },
   {
     name: 'Cafe Burger',
     price: '₹219',
     image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=80',
     accent: 'bg-sky-50',
+    meta: 'Loaded combo',
+  },
+]
+
+const categories = [
+  { icon: Pizza, label: 'Pizza', tone: 'bg-orange-50 text-primary' },
+  { icon: Hamburger, label: 'Burgers', tone: 'bg-amber-50 text-warning' },
+  { icon: Coffee, label: 'Cafe', tone: 'bg-sky-50 text-accent' },
+  { icon: Cake, label: 'Desserts', tone: 'bg-rose-50 text-rose-600' },
+]
+
+const steps = [
+  { icon: Storefront, title: 'Choose a restaurant', text: 'Browse top-rated kitchens and dine-out places near you.' },
+  { icon: Handbag, title: 'Build your order', text: 'Add dishes, reserve a table, and apply offers in one flow.' },
+  { icon: ShieldCheck, title: 'Track and relax', text: 'Pay securely and follow every update until food arrives.' },
+]
+
+const reviews = [
+  {
+    name: 'Aarav Mehta',
+    role: 'Regular customer',
+    text: 'The menu and checkout feel smooth. I can find food fast and track everything clearly.',
+  },
+  {
+    name: 'Priya Shah',
+    role: 'Dine-out guest',
+    text: 'Table booking and delivery in one app makes planning dinner so much easier.',
+  },
+  {
+    name: 'Karan Joshi',
+    role: 'Food explorer',
+    text: 'The restaurant cards and dish suggestions make the experience feel premium and simple.',
   },
 ]
 
@@ -221,6 +257,28 @@ function HomePage() {
         </div>
       </section>
 
+      <section className="relative z-10 -mt-10">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
+          <div className="grid gap-3 rounded-xl border border-white/80 bg-white/95 p-3 shadow-2xl shadow-slate-200/80 backdrop-blur md:grid-cols-4">
+            {categories.map(({ icon: Icon, label, tone }) => (
+              <Link
+                key={label}
+                to={`/menu?category=${encodeURIComponent(label)}`}
+                className="group flex items-center gap-4 rounded-lg p-4 transition hover:bg-slate-50"
+              >
+                <span className={`grid h-12 w-12 place-items-center rounded-lg ${tone}`}>
+                  <Icon className="h-7 w-7" weight="duotone" />
+                </span>
+                <span>
+                  <span className="block text-lg font-bold text-slate-950">{label}</span>
+                  <span className="text-sm text-muted-foreground">Explore now</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="relative bg-white py-16">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           <div className="mb-9 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -238,9 +296,17 @@ function HomePage() {
               <motion.div
                 key={dish.name}
                 whileHover={{ y: -6 }}
-                className={`overflow-hidden rounded-xl border border-slate-100 ${dish.accent} p-4 shadow-card transition`}
+                className={`group overflow-hidden rounded-xl border border-slate-100 ${dish.accent} p-4 shadow-card transition hover:shadow-card-hover`}
               >
-                <img src={dish.image} alt={dish.name} className="h-44 w-full rounded-lg object-cover shadow-lg shadow-slate-200/70" />
+                <div className="relative overflow-hidden rounded-lg">
+                  <img src={dish.image} alt={dish.name} className="h-44 w-full object-cover shadow-lg shadow-slate-200/70 transition duration-500 group-hover:scale-105" />
+                  <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-slate-800 shadow-sm">
+                    {dish.meta}
+                  </span>
+                  <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-slate-950/85 px-3 py-1 text-xs font-bold text-white">
+                    <Star className="h-3.5 w-3.5 text-primary-300" weight="fill" /> 4.8
+                  </span>
+                </div>
                 <div className="mt-4 flex items-center justify-between gap-3">
                   <div>
                     <h3 className="text-lg font-bold text-slate-950">{dish.name}</h3>
@@ -250,6 +316,45 @@ function HomePage() {
                 </div>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white pb-16">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
+          <div className="overflow-hidden rounded-xl border border-slate-100 bg-slate-950 shadow-2xl shadow-slate-200/80">
+            <div className="grid lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="relative min-h-[340px]">
+                <img
+                  src="https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=1100&q=85"
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/25 to-transparent" />
+                <div className="absolute bottom-6 left-6 right-6 rounded-lg border border-white/15 bg-white/10 p-4 text-white backdrop-blur">
+                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-primary-300">Dine-out mood</p>
+                  <p className="mt-1 text-2xl font-bold">Reserve a table for tonight</p>
+                </div>
+              </div>
+              <div className="p-6 text-white md:p-8 lg:p-10">
+                <p className="text-sm font-bold uppercase tracking-[0.2em] text-primary-300">How it works</p>
+                <h2 className="mt-3 font-display text-5xl leading-none md:text-6xl">From craving to checkout in minutes.</h2>
+                <div className="mt-8 space-y-4">
+                  {steps.map(({ icon: Icon, title, text }, index) => (
+                    <div key={title} className="flex gap-4 rounded-lg border border-white/10 bg-white/10 p-4">
+                      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-primary text-white">
+                        <Icon className="h-6 w-6" weight="duotone" />
+                      </span>
+                      <div>
+                        <p className="text-sm font-bold uppercase tracking-[0.15em] text-white/45">Step 0{index + 1}</p>
+                        <h3 className="text-lg font-bold">{title}</h3>
+                        <p className="text-sm leading-6 text-white/65">{text}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -322,7 +427,49 @@ function HomePage() {
 
       <AISuggestions />
 
-      <section className="bg-white py-20">
+      <section className="bg-white py-16">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
+          <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-primary">Loved by foodies</p>
+              <h2 className="mt-2 font-display text-4xl text-slate-950 md:text-5xl">Happy customers, happy meals</h2>
+            </div>
+            <div className="flex items-center gap-1 text-primary">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star key={star} className="h-5 w-5" weight="fill" />
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            {reviews.map((review) => (
+              <motion.div
+                key={review.name}
+                whileHover={{ y: -5 }}
+                className="rounded-xl border border-slate-100 bg-slate-50 p-6 shadow-card transition hover:bg-white hover:shadow-card-hover"
+              >
+                <div className="mb-5 flex items-center gap-1 text-primary">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star key={star} className="h-4 w-4" weight="fill" />
+                  ))}
+                </div>
+                <p className="text-base leading-7 text-slate-700">"{review.text}"</p>
+                <div className="mt-6 flex items-center gap-3">
+                  <span className="grid h-11 w-11 place-items-center rounded-full bg-primary-light text-primary">
+                    <Heart className="h-5 w-5" weight="fill" />
+                  </span>
+                  <div>
+                    <p className="font-bold text-slate-950">{review.name}</p>
+                    <p className="text-sm text-muted-foreground">{review.role}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-slate-50 py-20">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           <div className="mb-8 flex items-end justify-between gap-4">
             <div>
