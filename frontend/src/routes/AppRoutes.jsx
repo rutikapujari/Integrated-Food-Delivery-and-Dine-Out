@@ -19,6 +19,8 @@ import AdminDashboardPage from '../pages/admin/AdminDashboardPage'
 import AdminOrdersPage from '../pages/admin/AdminOrdersPage'
 import AdminUsersPage from '../pages/admin/AdminUsersPage'
 import AdminRestaurantsPage from '../pages/admin/AdminRestaurantsPage'
+import AdminLoginPage from '../pages/admin/AdminLoginPage'
+import AdminRegisterPage from '../pages/admin/AdminRegisterPage'
 import BookReservationPage from '../pages/BookReservationPage'
 import ReservationsPage from '../pages/ReservationsPage'
 import RestaurantReviewsPage from '../pages/RestaurantReviewsPage'
@@ -30,6 +32,9 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+
+      <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/admin/register" element={<AdminRegisterPage />} />
 
       <Route element={<MainLayout />}>
         <Route path="/" element={<HomePage />} />

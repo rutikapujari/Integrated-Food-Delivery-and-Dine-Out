@@ -7,6 +7,7 @@ const {
   getRevenue,
   getRestaurants,
   getAnalytics,
+  updateUserRole,
 } = require("../controllers/adminController");
 
 const router = express.Router();
@@ -14,6 +15,7 @@ const router = express.Router();
 router.use(auth, authorize("admin"));
 
 router.get("/users", getUsers);
+router.put("/users/:id/role", updateUserRole);
 router.get("/orders", getOrders);
 router.get("/revenue", getRevenue);
 router.get("/restaurants", getRestaurants);

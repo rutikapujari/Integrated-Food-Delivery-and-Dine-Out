@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAuth } from '../../hooks/useAuth'
 import {
-  ChartBar, Package, Users, Storefront, ArrowLeft, List, X,
+  ChartBar, Package, Users, Storefront, ArrowLeft, SignOut, X,
 } from '../../utils/icons'
 
 const links = [
@@ -16,6 +17,7 @@ const links = [
 function AdminSidebar({ mobileOpen, onMobileClose }) {
   const location = useLocation()
   const { user } = useSelector((state) => state.auth)
+  const { logout } = useAuth()
 
   const NavLinks = ({ onClick }) => (
     <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -40,20 +42,30 @@ function AdminSidebar({ mobileOpen, onMobileClose }) {
     </nav>
   )
 
+  const SidebarFooter = () => (
+    <div className="border-t border-slate-700">
+      <button
+        onClick={logout}
+        className="flex items-center gap-2 w-full px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800 text-sm transition-colors"
+      >
+        <SignOut className="w-4 h-4" /> Sign Out
+      </button>
+      <Link to="/" className="flex items-center gap-2 px-4 py-3 text-slate-400 hover:text-white text-sm transition-colors">
+        <ArrowLeft className="w-4 h-4" /> Back to FoodHub
+      </Link>
+    </div>
+  )
+
   return (
     <>
       <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 bg-slate-900 text-white flex-col z-30">
         <div className="p-6 border-b border-slate-700">
-          <h2 className="font-display text-2xl tracking-wider">
+          <Link to="/admin" className="font-display text-2xl tracking-wider hover:opacity-80 transition-opacity">
             FoodHub<span className="text-primary">Admin</span>
-          </h2>
-        </div>
-        <NavLinks />
-        <div className="p-4 border-t border-slate-700">
-          <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back to FoodHub
           </Link>
         </div>
+        <NavLinks />
+        <SidebarFooter />
       </aside>
 
       <AnimatePresence>
@@ -74,19 +86,15 @@ function AdminSidebar({ mobileOpen, onMobileClose }) {
               className="lg:hidden fixed left-0 top-0 bottom-0 w-72 bg-slate-900 text-white flex flex-col z-50"
             >
               <div className="flex items-center justify-between p-6 border-b border-slate-700">
-                <h2 className="font-display text-2xl tracking-wider">
+                <Link to="/admin" onClick={onMobileClose} className="font-display text-2xl tracking-wider hover:opacity-80 transition-opacity">
                   FoodHub<span className="text-primary">Admin</span>
-                </h2>
+                </Link>
                 <button onClick={onMobileClose} className="p-2 rounded-lg hover:bg-slate-800">
                   <X className="w-5 h-5" />
                 </button>
               </div>
               <NavLinks onClick={onMobileClose} />
-              <div className="p-4 border-t border-slate-700">
-                <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors">
-                  <ArrowLeft className="w-4 h-4" /> Back to FoodHub
-                </Link>
-              </div>
+              <SidebarFooter />
             </motion.aside>
           </>
         )}

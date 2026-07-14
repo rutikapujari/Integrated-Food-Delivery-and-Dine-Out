@@ -59,11 +59,11 @@ const authSlice = createSlice({
   },
   reducers: {
     setCredentials(state, action) {
-      const { accessToken, refreshToken } = action.payload
-      state.token = accessToken
+      const { token, refreshToken } = action.payload
+      state.token = token
       state.refreshToken = refreshToken
       state.isAuthenticated = true
-      localStorage.setItem('token', accessToken)
+      localStorage.setItem('token', token)
       localStorage.setItem('refreshToken', refreshToken)
     },
     clearCredentials(state) {
@@ -84,10 +84,10 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false
         state.user = action.payload.user
-        state.token = action.payload.accessToken
+        state.token = action.payload.token
         state.refreshToken = action.payload.refreshToken
         state.isAuthenticated = true
-        localStorage.setItem('token', action.payload.accessToken)
+        localStorage.setItem('token', action.payload.token)
         localStorage.setItem('refreshToken', action.payload.refreshToken)
       })
       .addCase(loginUser.rejected, (state, action) => { state.loading = false; state.error = action.payload })
@@ -98,10 +98,10 @@ const authSlice = createSlice({
       .addCase(verifyOTP.fulfilled, (state, action) => {
         state.loading = false
         state.user = action.payload.user
-        state.token = action.payload.accessToken
+        state.token = action.payload.token
         state.refreshToken = action.payload.refreshToken
         state.isAuthenticated = true
-        localStorage.setItem('token', action.payload.accessToken)
+        localStorage.setItem('token', action.payload.token)
         localStorage.setItem('refreshToken', action.payload.refreshToken)
       })
       .addCase(verifyOTP.rejected, (state, action) => { state.loading = false; state.error = action.payload })
