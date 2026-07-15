@@ -25,15 +25,21 @@ function MenuPage() {
     }))
   }, [dispatch, search, category, priceRange])
 
+
+
   const handleSearch = useCallback((value) => {
     dispatch(setMenuSearch(value))
     dispatch(fetchMenuItems({ search: value, category }))
   }, [dispatch, category])
 
+
+
   const handleCategoryChange = useCallback((cat) => {
     dispatch(setMenuCategory(cat))
     dispatch(fetchMenuItems({ search, category: cat, priceRange: priceRange.min || priceRange.max ? priceRange : undefined }))
   }, [dispatch, search, priceRange])
+
+
 
   const handlePriceChange = useCallback((type, value) => {
     setPriceRange(prev => ({ ...prev, [type]: value }))
@@ -42,6 +48,10 @@ function MenuPage() {
   const applyPriceFilter = useCallback(() => {
     dispatch(fetchMenuItems({ search, category, priceRange: priceRange.min || priceRange.max ? priceRange : undefined }))
   }, [dispatch, search, category, priceRange])
+
+  
+
+
 
   const clearFilters = useCallback(() => {
     dispatch(setMenuSearch(''))
