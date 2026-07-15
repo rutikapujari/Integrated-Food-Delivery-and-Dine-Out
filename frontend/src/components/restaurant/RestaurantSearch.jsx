@@ -38,17 +38,17 @@ const RestaurantSearch = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="relative mb-6"
+      className="relative mb-8"
     >
       <div className="relative group">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 transition-colors" />
+        <Search className="absolute left-5 top-1/2 h-6 w-6 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-primary" />
 
         <input
           type="text"
           placeholder={placeholder}
           value={localValue}
           onChange={handleChange}
-          className="w-full h-12 pl-12 pr-12 rounded-full border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
+          className="h-16 w-full rounded-full border border-slate-200 bg-white pl-14 pr-14 text-xl text-foreground shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
         />
 
         <AnimatePresence>
@@ -61,7 +61,7 @@ const RestaurantSearch = ({
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={handleClear}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full bg-gray-200 hover:bg-red-500 hover:text-white transition-all"
+              className="absolute right-5 top-1/2 -translate-y-1/2 rounded-full bg-slate-100 p-1.5 text-slate-500 transition-all hover:bg-primary hover:text-white"
             >
               <X className="w-4 h-4" />
             </motion.button>

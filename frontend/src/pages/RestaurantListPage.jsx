@@ -47,8 +47,12 @@ function RestaurantListPage() {
   }, [dispatch])
 
   return (
-    <motion.div {...pageTransition} className="max-w-7xl mx-auto px-4 md:px-8 py-8">
-      <h1 className="font-display text-3xl md:text-4xl mb-6">Restaurants</h1>
+    <motion.div {...pageTransition} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="mb-8">
+        <h1 className="font-display text-5xl leading-none tracking-normal text-foreground md:text-6xl">
+          Restaurants
+        </h1>
+      </div>
       <RestaurantSearch value={search} onChange={handleSearch} />
       <RestaurantFilters />
       <RestaurantList />

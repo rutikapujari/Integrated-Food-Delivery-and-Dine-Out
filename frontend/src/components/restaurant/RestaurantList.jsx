@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Store } from "lucide-react";
 
@@ -13,7 +12,6 @@ import ErrorState from "../common/ErrorState";
 
 function RestaurantList({ limit, showPagination = true }) {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
   const { list, loading, error, pagination, search, filters } = useSelector(
     (state) => state.restaurant
@@ -74,7 +72,7 @@ function RestaurantList({ limit, showPagination = true }) {
     >
       <AnimatePresence mode="popLayout">
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
@@ -89,15 +87,8 @@ function RestaurantList({ limit, showPagination = true }) {
                 duration: 0.3,
                 delay: index * 0.05,
               }}
-              whileHover={{
-                scale: 1.03,
-                y: -5,
-              }}
               whileTap={{ scale: 0.97 }}
-              className="cursor-pointer"
-              onClick={() =>
-                navigate(`/restaurants/${restaurant._id}`)
-              }
+              className="h-full"
             >
               <RestaurantCard restaurant={restaurant} />
             </motion.div>
