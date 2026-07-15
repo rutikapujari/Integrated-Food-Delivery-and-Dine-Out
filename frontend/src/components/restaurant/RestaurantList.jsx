@@ -10,6 +10,7 @@ import Loader from "../common/Loader";
 import EmptyState from "../common/EmptyState";
 import ErrorState from "../common/ErrorState";
 
+
 function RestaurantList({ limit, showPagination = true }) {
   const dispatch = useDispatch();
 
