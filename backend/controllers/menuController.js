@@ -100,7 +100,27 @@ const createMenuItem = async (req, res) => {
 // ==============================
 const getMenuItems = async (req, res) => {
   try {
-    const menuItems = await MenuItem.find()
+    const { restaurantId, category, search } = req.query;
+    const filter = {};
+
+    if (restaurantId && mongoose.Types.ObjectId.isValid(restaurantId)) {
+      filter.restaurantId = restaurantId;
+    }
+
+    if (category) {
+      filter.category = new RegExp(`^${category}$`, "i");
+    }
+
+    if (search) {
+      const searchExpression = new RegExp(search, "i");
+      filter.$or = [
+        { name: searchExpression },
+        { description: searchExpression },
+        { category: searchExpression },
+      ];
+    }
+
+    const menuItems = await MenuItem.find(filter)
       .populate("restaurantId", "name cuisine")
       .sort({ createdAt: -1 });
 

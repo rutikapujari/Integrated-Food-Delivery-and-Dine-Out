@@ -30,6 +30,7 @@ app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.get("/reset/:token", (req, res) => {
   res.redirect(`/api/auth/reset/${req.params.token}`);
