@@ -4,15 +4,25 @@ import { cardHover } from '../../utils/motion'
 import { Clock, MapPin, Star, Utensils } from 'lucide-react'
 
 const fallbackImages = {
-  indian: '/restaurant-images/indian.svg',
-  pizza: '/restaurant-images/pizza.svg',
-  italian: '/restaurant-images/pizza.svg',
-  healthy: '/restaurant-images/cafe.svg',
-  cafe: '/restaurant-images/cafe.svg',
-  salad: '/restaurant-images/cafe.svg',
-  burger: '/restaurant-images/burger.svg',
-  fast: '/restaurant-images/burger.svg',
-  general: '/restaurant-images/dining.svg',
+  indian: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=1200&q=85',
+  pizza: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1200&q=85',
+  italian: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=85',
+  healthy: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=1200&q=85',
+  cafe: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=85',
+  salad: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=1200&q=85',
+  burger: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=85',
+  fast: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=85',
+  general: [
+    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=85',
+    'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=1200&q=85',
+    'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1200&q=85',
+    'https://images.unsplash.com/photo-1551218808-94e220e084d2?auto=format&fit=crop&w=1200&q=85',
+  ],
+}
+
+function pickGeneralFoodImage(name = '') {
+  const imageIndex = [...name].reduce((total, character) => total + character.charCodeAt(0), 0) % fallbackImages.general.length
+  return fallbackImages.general[imageIndex]
 }
 
 function getFallbackImage(restaurant) {
@@ -26,7 +36,7 @@ function getFallbackImage(restaurant) {
   if (haystack.includes('cafe') || haystack.includes('green') || haystack.includes('healthy') || haystack.includes('salad')) return fallbackImages.cafe
   if (haystack.includes('burger') || haystack.includes('fast')) return fallbackImages.burger
 
-  return fallbackImages.general
+  return pickGeneralFoodImage(restaurant?.name)
 }
 
 function RestaurantCard({ restaurant, onClick }) {
@@ -35,7 +45,8 @@ function RestaurantCard({ restaurant, onClick }) {
   const imageSrc = restaurant.image || restaurant.coverImage || fallbackImage
   const cuisine = Array.isArray(restaurant.cuisine) ? restaurant.cuisine.join(', ') : restaurant.cuisine
   const deliveryTime = restaurant.deliveryTime || restaurant.avgDeliveryTime || restaurant.averagePrepTime || 30
-  const rating = Number(restaurant.rating || 0).toFixed(restaurant.rating ? 1 : 0)
+  const hasRating = Number(restaurant.rating) > 0
+  const rating = hasRating ? Number(restaurant.rating).toFixed(1) : 'New'
 
   const handleClick = () => {
     if (onClick) onClick()
@@ -50,8 +61,8 @@ function RestaurantCard({ restaurant, onClick }) {
       onClick={handleClick}
       className="group h-full cursor-pointer overflow-hidden rounded-[var(--radius-lg)] border border-border bg-white shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-1 hover:border-border-hover hover:shadow-[var(--shadow-card-hover)]"
     >
-      <div className="relative h-56 overflow-hidden bg-primary-light">
-        <div className="absolute inset-0 flex items-center justify-center bg-primary-light text-primary">
+      <div className="relative h-56 overflow-hidden bg-slate-100">
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-primary">
           <Utensils className="h-12 w-12" />
         </div>
         {imageSrc ? (
@@ -66,7 +77,7 @@ function RestaurantCard({ restaurant, onClick }) {
               }
               event.currentTarget.src = fallbackImage
             }}
-            className="absolute inset-0 z-10 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="absolute inset-0 z-10 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
         ) : null}
         <div className="absolute inset-x-0 bottom-0 z-20 h-20 bg-gradient-to-t from-black/45 to-transparent" />
@@ -84,14 +95,14 @@ function RestaurantCard({ restaurant, onClick }) {
       <div className="p-5">
         <div className="flex items-start justify-between gap-2">
           <h3 className="min-w-0 truncate text-xl font-semibold leading-tight text-foreground">{restaurant.name}</h3>
-          <span className="flex shrink-0 items-center gap-1 rounded-full bg-success-light px-2.5 py-1 text-sm font-semibold text-success">
-            <Star className="h-4 w-4 fill-current" /> {rating}
+          <span className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-sm font-semibold ${hasRating ? 'bg-success text-white' : 'bg-success-light text-success'}`}>
+            {hasRating && <Star className="h-3.5 w-3.5 fill-current" />} {rating}
           </span>
         </div>
         <p className="mt-2 truncate text-base text-muted-foreground">
           {cuisine || 'General'}
         </p>
-        <p className="mt-2 flex items-center gap-1.5 truncate text-sm text-muted-foreground">
+        <p className="mt-3 flex items-center gap-1.5 truncate border-t border-slate-100 pt-3 text-sm text-muted-foreground">
           <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
           <span className="truncate">{restaurant.address || 'Address not provided'}</span>
         </p>
