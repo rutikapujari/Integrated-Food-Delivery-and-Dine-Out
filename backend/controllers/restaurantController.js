@@ -203,13 +203,40 @@ const createRestaurant = async (req, res) => {
 // ==============================
 const getRestaurants = async (req, res) => {
   try {
-    const restaurants = await Restaurant.find().sort({
-      createdAt: -1,
-    });
+    const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 12, 1), 50);
+    const { search, cuisine, rating, deliveryTime } = req.query;
+    const filter = { status: "approved" };
+
+    if (search) {
+      const searchExpression = new RegExp(search, "i");
+      filter.$or = [
+        { name: searchExpression },
+        { cuisine: searchExpression },
+        { tags: searchExpression },
+        { address: searchExpression },
+      ];
+    }
+
+    if (cuisine) filter.cuisine = new RegExp(`^${cuisine}$`, "i");
+    if (rating && !Number.isNaN(Number(rating))) filter.rating = { $gte: Number(rating) };
+    if (deliveryTime && !Number.isNaN(Number(deliveryTime))) filter.averagePrepTime = { $lte: Number(deliveryTime) };
+
+    const [restaurants, total] = await Promise.all([
+      Restaurant.find(filter)
+        .sort({ isOpen: -1, rating: -1, createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      Restaurant.countDocuments(filter),
+    ]);
 
     res.status(200).json({
       success: true,
       count: restaurants.length,
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
       restaurants,
     });
   } catch (error) {
