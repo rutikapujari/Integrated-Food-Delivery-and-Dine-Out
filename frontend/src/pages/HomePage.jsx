@@ -7,40 +7,91 @@ import { fetchRestaurants } from '../redux/restaurantSlice'
 import RestaurantList from '../components/restaurant/RestaurantList'
 import Button from '../components/common/Button'
 import AISuggestions from '../components/menu/AISuggestions'
-import { Storefront, ArrowRight, Truck, Clock, CreditCard, MapPin, Motorcycle, Star, CaretRight } from '../utils/icons'
+import { Storefront, ArrowRight, Clock, MapPin, Motorcycle, Star, CaretRight } from '../utils/icons'
 
 const quickCuisines = ['Biryani', 'Pizza', 'Burgers', 'Chinese', 'Desserts']
 
-const features = [
+const foodCategories = [
   {
-    icon: Truck,
-    title: 'Fast Delivery',
-    description: 'Get your food delivered hot and fresh in under 30 minutes by our dedicated delivery partners.',
+    title: 'Biryani',
+    search: 'Biryani',
+    image: 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=700&q=85',
   },
   {
-    icon: Clock,
-    title: 'Live Tracking',
-    description: 'Track your order in real-time from restaurant to doorstep with live GPS updates.',
+    title: 'Pizza',
+    search: 'Pizza',
+    image: 'https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?auto=format&fit=crop&w=700&q=85',
   },
   {
-    icon: CreditCard,
-    title: 'Secure Payment',
-    description: 'Multiple payment options including UPI, cards, and cash on delivery with secure checkout.',
+    title: 'Burgers',
+    search: 'Burger',
+    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=700&q=85',
+  },
+  {
+    title: 'Desserts',
+    search: 'Dessert',
+    image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=700&q=85',
+  },
+  {
+    title: 'Healthy',
+    search: 'Salad',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=700&q=85',
   },
 ]
 
-function FeatureCard({ icon: Icon, title, description }) {
+function FoodCategoryCard({ title, image, onClick }) {
   return (
     <motion.div
       variants={fadeInUp}
-      className="text-center p-8 bg-white border border-border rounded-[var(--radius-xl)] shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-card-hover)]"
+      onClick={onClick}
+      className="group relative h-44 cursor-pointer overflow-hidden rounded-2xl bg-slate-200 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl"
     >
-      <div className="w-16 h-16 bg-primary-light rounded-full flex items-center justify-center mx-auto mb-4">
-        <Icon className="w-8 h-8 text-primary" />
+      <img src={image} alt={title} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-4 text-white">
+        <h3 className="text-lg font-bold">{title}</h3>
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur"><CaretRight className="h-4 w-4" weight="bold" /></span>
       </div>
-      <h3 className="font-semibold text-lg mb-2">{title}</h3>
-      <p className="text-muted-foreground text-sm">{description}</p>
     </motion.div>
+  )
+}
+
+function LiveDeliveryPanel({ onBrowse }) {
+  return (
+    <section className="bg-slate-950 py-14 text-white md:py-20">
+      <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 md:px-8 lg:grid-cols-2">
+        <div>
+          <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-orange-300">No more delivery guesswork</p>
+          <h2 className="font-display text-4xl leading-none md:text-5xl">Live tracking,<br />from kitchen to doorstep.</h2>
+          <p className="mt-5 max-w-lg text-base leading-7 text-slate-300">Once an order is placed, FoodHub keeps every status in sync—confirmed, preparing, on the way and delivered.</p>
+          <button type="button" onClick={onBrowse} className="mt-7 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 font-bold text-white transition-colors hover:bg-primary-hover">
+            Order food now <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mx-auto w-full max-w-md rounded-[28px] border border-white/10 bg-white p-5 text-slate-800 shadow-2xl shadow-black/30">
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Live order status</p>
+              <p className="mt-1 text-lg font-bold">Spice Garden</p>
+            </div>
+            <span className="rounded-full bg-success-light px-3 py-1.5 text-xs font-bold text-success">On the way</span>
+          </div>
+          <div className="rounded-2xl bg-[#fff5ed] p-5">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-400"><span>RESTAURANT</span><span>YOUR HOME</span></div>
+            <div className="relative my-6 h-12">
+              <div className="absolute left-3 right-3 top-5 h-1 rounded-full bg-orange-200" />
+              <div className="absolute left-3 top-5 h-1 w-[58%] rounded-full bg-primary" />
+              <span className="absolute left-0 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-white"><Storefront className="h-4 w-4" weight="fill" /></span>
+              <span className="absolute left-[55%] top-0 flex h-11 w-11 items-center justify-center rounded-full border-4 border-white bg-primary text-white shadow-lg"><Motorcycle className="h-5 w-5" weight="fill" /></span>
+              <span className="absolute right-0 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-300 text-slate-600"><MapPin className="h-4 w-4" weight="fill" /></span>
+            </div>
+            <div className="flex items-center justify-between"><div><p className="text-xs text-slate-400">Estimated arrival</p><p className="text-2xl font-bold">12 min</p></div><div className="text-right"><p className="text-xs text-slate-400">Delivery partner</p><p className="font-bold">Rahul is nearby</p></div></div>
+          </div>
+          <div className="mt-4 flex items-center gap-3 rounded-xl border border-slate-100 p-3"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-success-light text-success"><Clock className="h-4 w-4" weight="bold" /></span><p className="text-sm font-semibold">Your food is packed and headed your way.</p></div>
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -150,25 +201,30 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="bg-white py-20">
+      <section className="bg-white py-16 md:py-20">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
-          <h2 className="font-display text-3xl md:text-4xl text-center mb-4">Why FoodHub?</h2>
-          <p className="text-muted-foreground text-center mb-12 max-w-xl mx-auto">
-            We make food ordering simple, fast, and delightful.
-          </p>
+          <div className="mb-8 flex items-end justify-between gap-4">
+            <div>
+              <p className="mb-2 text-sm font-bold uppercase tracking-[0.16em] text-primary">Food for every mood</p>
+              <h2 className="font-display text-3xl md:text-4xl">Eat what makes you happy</h2>
+            </div>
+            <button type="button" onClick={() => navigate('/menu')} className="hidden items-center gap-1 text-sm font-bold text-primary hover:underline sm:flex">View all menu <ArrowRight className="h-4 w-4" /></button>
+          </div>
           <motion.div
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+            className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5"
           >
-            {features.map((f) => (
-              <FeatureCard key={f.title} {...f} />
+            {foodCategories.map((category) => (
+              <FoodCategoryCard key={category.title} {...category} onClick={() => navigate(`/menu?search=${encodeURIComponent(category.search)}`)} />
             ))}
           </motion.div>
         </div>
       </section>
+
+      <LiveDeliveryPanel onBrowse={() => navigate('/restaurants')} />
 
       <AISuggestions />
 
@@ -190,15 +246,20 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="py-16 bg-primary">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 text-center">
-          <h2 className="font-display text-3xl md:text-4xl text-white mb-4">Ready to order?</h2>
-          <p className="text-white/80 mb-8 max-w-md mx-auto">
-            Hungry? We&apos;ve got you covered. Browse restaurants and get food delivered in minutes.
-          </p>
-          <Button size="lg" variant="secondary" onClick={() => navigate('/restaurants')}>
-            Get Started
-          </Button>
+      <section className="relative flex min-h-[calc(100vh-80px)] items-center overflow-hidden bg-slate-950">
+        <div className="relative w-full overflow-hidden bg-slate-950">
+          <div className="absolute inset-y-0 right-0 hidden w-1/2 bg-[url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1400&q=85')] bg-cover bg-center opacity-75 lg:block" />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/20" />
+          <div className="relative mx-auto w-full max-w-7xl px-6 py-20 text-white md:px-12 md:py-28 lg:px-16">
+            <span className="inline-flex items-center gap-2 rounded-full bg-primary/20 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-orange-200"><span className="h-2 w-2 rounded-full bg-orange-300" />Your next meal is ready</span>
+            <h2 className="font-display mt-5 text-4xl leading-none md:text-6xl">Restaurant food.<br />Delivered your way.</h2>
+            <p className="mt-5 max-w-lg text-base leading-7 text-slate-300">Choose from fresh dishes near you, pay securely and watch your order arrive in real time.</p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button size="lg" onClick={() => navigate('/restaurants')}>Browse restaurants</Button>
+              <button type="button" onClick={() => navigate('/menu')} className="rounded-xl border border-white/25 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10">Explore menu</button>
+            </div>
+            <div className="mt-9 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-300"><span><b className="text-white">30 min</b> average delivery</span><span><b className="text-white">4.8/5</b> customer rating</span></div>
+          </div>
         </div>
       </section>
     </motion.div>

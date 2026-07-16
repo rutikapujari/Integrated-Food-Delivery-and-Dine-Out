@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useDispatch } from 'react-redux'
+import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { pageTransition } from '../utils/motion'
 import { setMenuSearch, fetchMenuItems } from '../redux/menuSlice'
@@ -8,13 +9,17 @@ import MenuList from '../components/menu/MenuList'
 
 function MenuPage() {
   const dispatch = useDispatch()
-  const [search, setSearch] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const search = searchParams.get('search') || ''
+
+  useEffect(() => {
+    dispatch(setMenuSearch(search))
+    dispatch(fetchMenuItems({ search: search || undefined }))
+  }, [dispatch, search])
 
   const handleSearch = useCallback((value) => {
-    setSearch(value)
-    dispatch(setMenuSearch(value))
-    dispatch(fetchMenuItems({ search: value || undefined }))
-  }, [dispatch])
+    setSearchParams(value ? { search: value } : {}, { replace: true })
+  }, [setSearchParams])
 
   return (
     <motion.div {...pageTransition} className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-10">

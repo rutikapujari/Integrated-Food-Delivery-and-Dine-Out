@@ -1,18 +1,17 @@
 import { useSelector, useDispatch } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
-import { setFilters, clearFilters, fetchRestaurants } from '../../redux/restaurantSlice'
+import { setFilters, clearFilters } from '../../redux/restaurantSlice'
 import { CUISINE_TYPES } from '../../utils/constants'
 import { ChevronDown, Star, X } from 'lucide-react'
 
 function RestaurantFilters() {
   const dispatch = useDispatch()
-  const { filters, pagination } = useSelector((state) => state.restaurant)
+  const { filters } = useSelector((state) => state.restaurant)
   const hasFilters = filters.cuisine || filters.rating || filters.deliveryTime
 
   const handleChange = (key, value) => {
     dispatch(setFilters({ [key]: value || null }))
     dispatch({ type: 'restaurant/setPage', payload: 1 })
-    dispatch(fetchRestaurants({ page: 1, limit: pagination.limit }))
   }
 
   const handleClear = () => {

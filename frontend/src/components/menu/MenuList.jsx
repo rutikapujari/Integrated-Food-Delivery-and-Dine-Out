@@ -15,7 +15,7 @@ function MenuList({ restaurantId, category, showCategories = false }) {
   const { items, categories, loading, error } = useSelector((state) => state.menu)
 
   useEffect(() => {
-    dispatch(fetchMenuItems({ restaurantId }))
+    if (restaurantId) dispatch(fetchMenuItems({ restaurantId }))
   }, [dispatch, restaurantId])
 
   if (loading) return <Loader variant="card" count={6} />
