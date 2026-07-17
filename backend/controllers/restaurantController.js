@@ -9,6 +9,8 @@ const toNumber = (value) => {
   return Number.isFinite(number) ? number : null;
 };
 
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const normalizeCuisine = (cuisine) => {
   if (Array.isArray(cuisine)) {
     const normalizedCuisine = cuisine
@@ -218,7 +220,12 @@ const getRestaurants = async (req, res) => {
       ];
     }
 
-    if (cuisine) filter.cuisine = new RegExp(`^${cuisine}$`, "i");
+    if (cuisine) {
+      const normalizedCuisine = escapeRegex(cuisine.trim());
+      // Restaurants can have multiple cuisines stored as "American, Fast Food".
+      // Match the selected cuisine as a complete entry, not as an exact full string.
+      filter.cuisine = new RegExp(`(^|\\s*,\\s*)${normalizedCuisine}(?=\\s*,\\s*|$)`, "i");
+    }
     if (rating && !Number.isNaN(Number(rating))) filter.rating = { $gte: Number(rating) };
     if (deliveryTime && !Number.isNaN(Number(deliveryTime))) filter.averagePrepTime = { $lte: Number(deliveryTime) };
 

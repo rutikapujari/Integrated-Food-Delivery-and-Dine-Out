@@ -8,10 +8,15 @@ const {
   createPayment,
   updatePayment,
   deletePayment,
-  createCheckoutSession,
-  verifyPayment,
-  stripeWebhook,
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+  razorpayWebhook,
 } = require("../controllers/paymentController");
+
+// ==============================
+// Webhook (no auth, raw body)
+// ==============================
+router.post("/webhook", razorpayWebhook);
 
 // ==============================
 // Protected Routes
@@ -23,14 +28,11 @@ router.get("/", auth, getPayments);
 // Create manual payment record
 router.post("/", auth, createPayment);
 
-// Create Stripe Checkout Session
-router.post("/checkout", auth, createCheckoutSession);
+// Create Razorpay Order
+router.post("/create-order", auth, createRazorpayOrder);
 
-// Verify Payment
-router.post("/verify", auth, verifyPayment);
-
-// Stripe webhook endpoint
-router.post("/webhook", stripeWebhook);
+// Verify Razorpay Payment
+router.post("/verify", auth, verifyRazorpayPayment);
 
 // Update payment
 router.put("/:id", auth, updatePayment);

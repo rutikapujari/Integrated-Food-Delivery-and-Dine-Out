@@ -14,12 +14,17 @@ const paymentSchema = new mongoose.Schema(
       required: true,
     },
 
-    stripeSessionId: {
+    razorpayOrderId: {
       type: String,
       default: "",
     },
 
-    stripePaymentIntentId: {
+    razorpayPaymentId: {
+      type: String,
+      default: "",
+    },
+
+    razorpaySignature: {
       type: String,
       default: "",
     },
@@ -36,23 +41,22 @@ const paymentSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      default: "card",
+      enum: ["Card", "UPI", "NetBanking", "Wallet", "Cash on Delivery"],
+      default: "Card",
     },
 
     paymentStatus: {
       type: String,
-      enum: [
-        "Pending",
-        "Paid",
-        "Failed",
-        "Refunded"
-      ],
+      enum: ["Pending", "Paid", "Failed", "Refunded"],
       default: "Pending",
-    }
+    },
   },
   {
     timestamps: true,
   }
 );
+
+paymentSchema.index({ razorpayOrderId: 1 });
+paymentSchema.index({ userId: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Payment", paymentSchema);
