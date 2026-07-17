@@ -7,11 +7,15 @@ function RestaurantHeader({ restaurant, reviewCount }) {
 
   return (
     <div className="relative h-64 md:h-80 overflow-hidden">
-      <img
-        src={restaurant.image}
-        alt={restaurant.name}
-        className="w-full h-full object-cover"
-      />
+      {restaurant.image ? (
+        <img
+          src={restaurant.image}
+          alt={restaurant.name}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5" />
+      )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 text-white">
         <h1 className="font-display text-4xl md:text-5xl">{restaurant.name}</h1>
@@ -24,9 +28,8 @@ function RestaurantHeader({ restaurant, reviewCount }) {
             {reviewCount !== undefined && ` (${reviewCount} reviews)`}
           </span>
           <span>&bull;</span>
-          <span>{restaurant.deliveryTime} min</span>
-          <span>&bull;</span>
-          <span>{restaurant.minOrder ? `Min order ${formatCurrency(restaurant.minOrder)}` : ''}</span>
+          {restaurant.averagePrepTime ? <><span>{restaurant.averagePrepTime} min prep</span><span>&bull;</span></> : null}
+          {restaurant.minimumOrderAmount ? <span>Min order {formatCurrency(restaurant.minimumOrderAmount)}</span> : null}
         </div>
         <div className="flex items-center gap-3 mt-3">
           {restaurant.isOpen !== false ? (

@@ -3,20 +3,18 @@ import { menuService } from '../../services/menuService'
 import { notify } from '../../utils/toast'
 import Button from '../common/Button'
 import Modal from '../common/Modal'
-import { Plus, Trash, ForkKnife, X } from '../../utils/icons'
+import { Plus, Trash, Pencil, ForkKnife, X } from '../../utils/icons'
+
+const EMPTY_FORM = { name: '', description: '', category: '', price: '', image: '' }
 
 function RestaurantMenuManager({ restaurantId, items, onRefresh }) {
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
   const [deleting, setDeleting] = useState(false)
-  const [form, setForm] = useState({
-    name: '',
-    description: '',
-    category: '',
-    price: '',
-    image: '',
-  })
+  const [editItem, setEditItem] = useState(null)
+  const [editLoading, setEditLoading] = useState(false)
+  const [form, setForm] = useState(EMPTY_FORM)
 
   const categories = [...new Set(items.map((i) => i.category).filter(Boolean))]
 
@@ -33,13 +31,50 @@ function RestaurantMenuManager({ restaurantId, items, onRefresh }) {
         restaurantId,
       })
       notify.success('Menu item added!')
-      setForm({ name: '', description: '', category: '', price: '', image: '' })
+      setForm(EMPTY_FORM)
       setShowForm(false)
       onRefresh?.()
     } catch (err) {
       notify.error(err.response?.data?.message || 'Failed to add item')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleEdit = (item) => {
+    setEditItem({
+      _id: item._id,
+      name: item.name,
+      description: item.description || '',
+      category: item.category,
+      price: item.price,
+      image: item.image || '',
+      isAvailable: item.isAvailable !== false,
+    })
+  }
+
+  const handleEditSave = async () => {
+    if (!editItem.name || !editItem.category || !editItem.price) {
+      notify.error('Name, category and price are required')
+      return
+    }
+    setEditLoading(true)
+    try {
+      await menuService.update(editItem._id, {
+        name: editItem.name,
+        description: editItem.description,
+        category: editItem.category,
+        price: Number(editItem.price),
+        image: editItem.image,
+        isAvailable: editItem.isAvailable,
+      })
+      notify.success('Menu item updated!')
+      setEditItem(null)
+      onRefresh?.()
+    } catch (err) {
+      notify.error(err.response?.data?.message || 'Failed to update item')
+    } finally {
+      setEditLoading(false)
     }
   }
 
@@ -63,7 +98,7 @@ function RestaurantMenuManager({ restaurantId, items, onRefresh }) {
         <h3 className="font-semibold text-lg flex items-center gap-2">
           <ForkKnife className="w-5 h-5 text-primary" weight="duotone" /> Manage Menu
         </h3>
-        <Button size="sm" icon={Plus} onClick={() => setShowForm(!showForm)}>
+        <Button size="sm" icon={Plus} onClick={() => { setForm(EMPTY_FORM); setShowForm(!showForm) }}>
           Add Item
         </Button>
       </div>
@@ -95,9 +130,9 @@ function RestaurantMenuManager({ restaurantId, items, onRefresh }) {
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
                 placeholder="e.g. Pizza, Burger, Drinks"
                 className="h-10 px-3 rounded-lg border border-border text-sm bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
-                list="category-suggestions"
+                list="category-suggestions-mgr"
               />
-              <datalist id="category-suggestions">
+              <datalist id="category-suggestions-mgr">
                 {categories.map((c) => <option key={c} value={c} />)}
               </datalist>
             </div>
@@ -160,8 +195,16 @@ function RestaurantMenuManager({ restaurantId, items, onRefresh }) {
                 {item.isAvailable !== false ? 'Active' : 'Off'}
               </span>
               <button
+                onClick={() => handleEdit(item)}
+                className="shrink-0 p-2 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-primary-light"
+                title="Edit"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button
                 onClick={() => setDeleteId(item._id)}
                 className="shrink-0 p-2 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-destructive/10"
+                title="Delete"
               >
                 <Trash className="w-4 h-4" />
               </button>
@@ -170,6 +213,94 @@ function RestaurantMenuManager({ restaurantId, items, onRefresh }) {
         </div>
       )}
 
+      {!items.length && !showForm && (
+        <div className="text-center py-8 bg-white border border-border rounded-[var(--radius-lg)]">
+          <ForkKnife className="w-8 h-8 text-muted-foreground mx-auto mb-2" weight="duotone" />
+          <p className="text-sm text-muted-foreground mb-3">No menu items yet. Add your first item!</p>
+          <Button size="sm" icon={Plus} onClick={() => setShowForm(true)}>Add Item</Button>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      <Modal
+        isOpen={!!editItem}
+        onClose={() => setEditItem(null)}
+        title="Edit Menu Item"
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setEditItem(null)}>Cancel</Button>
+            <Button loading={editLoading} onClick={handleEditSave}>Save Changes</Button>
+          </>
+        }
+      >
+        {editItem && (
+          <div className="space-y-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-semibold">Name *</label>
+              <input
+                type="text"
+                value={editItem.name}
+                onChange={(e) => setEditItem({ ...editItem, name: e.target.value })}
+                className="h-10 px-3 rounded-lg border border-border text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-semibold">Category *</label>
+              <input
+                type="text"
+                value={editItem.category}
+                onChange={(e) => setEditItem({ ...editItem, category: e.target.value })}
+                className="h-10 px-3 rounded-lg border border-border text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                list="category-suggestions-edit"
+              />
+              <datalist id="category-suggestions-edit">
+                {categories.map((c) => <option key={c} value={c} />)}
+              </datalist>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-semibold">Price *</label>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                value={editItem.price}
+                onChange={(e) => setEditItem({ ...editItem, price: e.target.value })}
+                className="h-10 px-3 rounded-lg border border-border text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-semibold">Image URL</label>
+              <input
+                type="text"
+                value={editItem.image}
+                onChange={(e) => setEditItem({ ...editItem, image: e.target.value })}
+                className="h-10 px-3 rounded-lg border border-border text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-semibold">Description</label>
+              <textarea
+                rows={2}
+                value={editItem.description}
+                onChange={(e) => setEditItem({ ...editItem, description: e.target.value })}
+                className="px-3 py-2 rounded-lg border border-border text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none resize-none"
+              />
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editItem.isAvailable}
+                onChange={(e) => setEditItem({ ...editItem, isAvailable: e.target.checked })}
+                className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
+              />
+              <span className="text-sm font-semibold">Available</span>
+            </label>
+          </div>
+        )}
+      </Modal>
+
+      {/* Delete Modal */}
       <Modal
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}

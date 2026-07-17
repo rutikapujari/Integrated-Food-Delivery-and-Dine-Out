@@ -15,7 +15,13 @@ function AISuggestionCard({ item, onClick }) {
       onClick={onClick}
       className="shrink-0 w-64 bg-white border border-border rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden cursor-pointer hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-1 transition-all duration-200 snap-start"
     >
-      <img src={item.image} alt={item.name} className="w-full h-36 object-cover" />
+      {item.image ? (
+        <img src={item.image} alt={item.name} className="w-full h-36 object-cover" />
+      ) : (
+        <div className="w-full h-36 bg-primary-light flex items-center justify-center">
+          <Sparkle className="w-8 h-8 text-primary" weight="duotone" />
+        </div>
+      )}
       <div className="p-3">
         <h4 className="font-semibold text-sm truncate">{item.name}</h4>
         <p className="text-primary font-bold text-sm mt-1">{formatCurrency(item.price)}</p>

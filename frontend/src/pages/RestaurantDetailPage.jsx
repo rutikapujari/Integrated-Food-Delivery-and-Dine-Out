@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -6,11 +6,10 @@ import { pageTransition } from '../utils/motion'
 import { fetchRestaurantById } from '../redux/restaurantSlice'
 import { fetchMenuItems } from '../redux/menuSlice'
 import { fetchReviews } from '../redux/reviewSlice'
-import { menuService } from '../services/menuService'
 import { formatCurrency } from '../utils/formatCurrency'
 import RestaurantHeader from '../components/restaurant/RestaurantHeader'
 import MenuList from '../components/menu/MenuList'
-import RestaurantMenuManager from '../components/restaurant/RestaurantMenuManager'
+import { ForkKnife } from '../utils/icons'
 import Loader from '../components/common/Loader'
 import Button from '../components/common/Button'
 
@@ -33,29 +32,16 @@ function RestaurantDetailPage() {
   const cart = useSelector((state) => state.cart)
   const { user } = useSelector((state) => state.auth)
   const restaurantReviews = reviews.restaurantReviews[id] || []
-  const [ownerItems, setOwnerItems] = useState([])
 
   const isOwner = user && selected && (
-    user.role === 'admin' || user._id === selected.ownerId
+    user.role === 'admin' || String(user._id) === String(selected.ownerId)
   )
-
-  const refreshOwnerMenu = useCallback(async () => {
-    if (!isOwner) return
-    try {
-      const { data } = await menuService.getAll({ restaurantId: id, limit: 100 })
-      setOwnerItems(data.menuItems || [])
-    } catch { /* silent */ }
-  }, [isOwner, id])
 
   useEffect(() => {
     dispatch(fetchRestaurantById(id))
     dispatch(fetchMenuItems({ restaurantId: id }))
     dispatch(fetchReviews(id))
   }, [dispatch, id])
-
-  useEffect(() => {
-    if (isOwner) refreshOwnerMenu()
-  }, [isOwner, refreshOwnerMenu])
 
   if (loading && !selected) return <Loader variant="page" />
   if (error) return <ErrorState message={error} onRetry={() => dispatch(fetchRestaurantById(id))} />
@@ -77,16 +63,19 @@ function RestaurantDetailPage() {
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
         <div className="flex gap-8">
           <div className="flex-1">
-            <h2 className="font-display text-2xl mb-6">Menu</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-display text-2xl">Menu</h2>
+              {isOwner && (
+                <Button
+                  size="sm"
+                  icon={ForkKnife}
+                  onClick={() => navigate(`/restaurants/${id}/manage-menu`)}
+                >
+                  Manage Menu
+                </Button>
+              )}
+            </div>
             <MenuList restaurantId={id} showCategories />
-
-            {isOwner && (
-              <RestaurantMenuManager
-                restaurantId={id}
-                items={ownerItems}
-                onRefresh={refreshOwnerMenu}
-              />
-            )}
           </div>
 
           {cartHasItems && (

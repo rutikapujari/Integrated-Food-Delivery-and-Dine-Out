@@ -26,6 +26,7 @@ import AdminMenuPage from '../pages/admin/AdminMenuPage'
 import AdminLoginPage from '../pages/admin/AdminLoginPage'
 import AdminRegisterPage from '../pages/admin/AdminRegisterPage'
 import BookReservationPage from '../pages/BookReservationPage'
+import RestaurantMenuManagePage from '../pages/RestaurantMenuManagePage'
 import ReservationsPage from '../pages/ReservationsPage'
 import RestaurantReviewsPage from '../pages/RestaurantReviewsPage'
 import SupportPage from '../pages/SupportPage'
@@ -80,6 +81,9 @@ function AppRoutes() {
         } />
         <Route path="/restaurants/:id/reserve" element={
           <ProtectedRoute><BookReservationPage /></ProtectedRoute>
+        } />
+        <Route path="/restaurants/:id/manage-menu" element={
+          <ProtectedRoute><RestaurantMenuManagePage /></ProtectedRoute>
         } />
         <Route path="/support" element={
           <ProtectedRoute><SupportPage /></ProtectedRoute>
