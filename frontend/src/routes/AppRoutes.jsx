@@ -22,6 +22,7 @@ import AdminDashboardPage from '../pages/admin/AdminDashboardPage'
 import AdminOrdersPage from '../pages/admin/AdminOrdersPage'
 import AdminUsersPage from '../pages/admin/AdminUsersPage'
 import AdminRestaurantsPage from '../pages/admin/AdminRestaurantsPage'
+import AdminMenuPage from '../pages/admin/AdminMenuPage'
 import AdminLoginPage from '../pages/admin/AdminLoginPage'
 import AdminRegisterPage from '../pages/admin/AdminRegisterPage'
 import BookReservationPage from '../pages/BookReservationPage'
@@ -96,6 +97,7 @@ function AppRoutes() {
           <Route path="/admin/orders" element={<AdminOrdersPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
           <Route path="/admin/restaurants" element={<AdminRestaurantsPage />} />
+          <Route path="/admin/menu" element={<AdminMenuPage />} />
         </Route>
       </Route>
     </Routes>

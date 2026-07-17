@@ -1,7 +1,10 @@
-import { Star } from '../../utils/icons'
+import { useNavigate } from 'react-router-dom'
+import { Star, Calendar } from '../../utils/icons'
 import { formatCurrency } from '../../utils/formatCurrency'
 
 function RestaurantHeader({ restaurant, reviewCount }) {
+  const navigate = useNavigate()
+
   return (
     <div className="relative h-64 md:h-80 overflow-hidden">
       <img
@@ -25,11 +28,21 @@ function RestaurantHeader({ restaurant, reviewCount }) {
           <span>&bull;</span>
           <span>{restaurant.minOrder ? `Min order ${formatCurrency(restaurant.minOrder)}` : ''}</span>
         </div>
-        {restaurant.isOpen !== false ? (
-          <span className="inline-block mt-2 px-3 py-1 bg-success text-white text-xs rounded-full">Open Now</span>
-        ) : (
-          <span className="inline-block mt-2 px-3 py-1 bg-destructive text-white text-xs rounded-full">Closed</span>
-        )}
+        <div className="flex items-center gap-3 mt-3">
+          {restaurant.isOpen !== false ? (
+            <span className="inline-block px-3 py-1 bg-success text-white text-xs rounded-full">Open Now</span>
+          ) : (
+            <span className="inline-block px-3 py-1 bg-destructive text-white text-xs rounded-full">Closed</span>
+          )}
+          {restaurant.isOpen !== false && (
+            <button
+              onClick={() => navigate(`/restaurants/${restaurant._id}/reserve`)}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-white text-primary text-sm font-semibold rounded-full hover:bg-white/90 transition-colors"
+            >
+              <Calendar className="w-3.5 h-3.5" weight="fill" /> Reserve a Table
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )

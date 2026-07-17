@@ -66,9 +66,11 @@ const reservationSlice = createSlice({
       .addCase(fetchReservationById.fulfilled, (state, action) => { state.loading = false; state.selected = action.payload.reservation })
       .addCase(fetchReservationById.rejected, (state, action) => { state.loading = false; state.error = action.payload })
       .addCase(cancelReservation.fulfilled, (state, action) => {
-        const idx = state.list.findIndex((r) => r._id === action.payload.reservation?._id)
-        if (idx >= 0) state.list[idx].status = 'cancelled'
-        if (state.selected?._id === action.payload.reservation?._id) state.selected.status = 'cancelled'
+        const updated = action.payload.reservation
+        if (!updated) return
+        const idx = state.list.findIndex((r) => r._id === updated._id)
+        if (idx >= 0) state.list[idx].status = updated.status
+        if (state.selected?._id === updated._id) state.selected.status = updated.status
       })
   },
 })

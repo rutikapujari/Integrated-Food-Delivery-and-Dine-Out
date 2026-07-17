@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../hooks/useAuth'
 import {
-  ChartBar, Package, Users, Storefront, ArrowLeft, SignOut, X,
+  ChartBar, Package, Users, Storefront, ForkKnife, ArrowLeft, SignOut, X,
 } from '../../utils/icons'
 
 const links = [
@@ -12,6 +12,7 @@ const links = [
   { to: '/admin/orders', label: 'Orders', icon: Package },
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/restaurants', label: 'Restaurants', icon: Storefront },
+  { to: '/admin/menu', label: 'Menu Items', icon: ForkKnife },
 ]
 
 function AdminSidebar({ mobileOpen, onMobileClose }) {

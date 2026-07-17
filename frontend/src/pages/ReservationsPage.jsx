@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
 import { pageTransition } from '../utils/motion'
 import { fetchReservations, cancelReservation } from '../redux/reservationSlice'
 import { notify } from '../utils/toast'
 import ReservationCard from '../components/reservation/ReservationCard'
-import Loader from '../components/common/Loader'
 import Button from '../components/common/Button'
 import Modal from '../components/common/Modal'
-import { Calendar as CalendarIcon } from '../utils/icons'
+import { Calendar as CalendarIcon, Storefront } from '../utils/icons'
 
 function ReservationsPage() {
   const dispatch = useDispatch()
@@ -22,19 +22,16 @@ function ReservationsPage() {
   }, [dispatch])
 
   const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
   const upcoming = list.filter((r) => {
-    if (r.status === 'cancelled') return false
-    if (r.status === 'completed') return false
-    const d = new Date(r.date)
-    return d >= new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    if (r.status === 'Cancelled' || r.status === 'Completed') return false
+    return new Date(r.reservationDate) >= todayStart
   })
 
   const past = list.filter((r) => {
-    if (r.status === 'cancelled') return true
-    if (r.status === 'completed') return true
-    const d = new Date(r.date)
-    return d < new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    if (r.status === 'Cancelled' || r.status === 'Completed') return true
+    return new Date(r.reservationDate) < todayStart
   })
 
   const activeList = tab === 'upcoming' ? upcoming : past
@@ -53,60 +50,83 @@ function ReservationsPage() {
   }
 
   return (
-    <motion.div {...pageTransition} className="max-w-3xl mx-auto px-4 md:px-8 py-8">
-      <h1 className="font-display text-3xl md:text-4xl mb-6">My Reservations</h1>
+    <motion.div {...pageTransition} className="min-h-screen bg-[#fffaf5]">
+      <div className="mx-auto max-w-4xl px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
+        <header className="mb-7 flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-primary">Dine-out reservations</p>
+            <h1 className="mt-1 text-3xl font-bold text-foreground md:text-4xl">My Reservations</h1>
+            {!loading && <p className="mt-2 text-muted-foreground">{list.length ? `${list.length} reservation${list.length === 1 ? '' : 's'} made` : 'Book a table at your favourite restaurant.'}</p>}
+          </div>
+          <Link to="/restaurants" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover">
+            <Storefront className="h-4 w-4" weight="fill" /> Browse restaurants
+          </Link>
+        </header>
 
-      <div className="flex gap-1 mb-6 bg-surface-muted rounded-full p-1 w-fit">
-        {['upcoming', 'past'].map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
-              tab === t ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t === 'upcoming' ? 'Upcoming' : 'Past'}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <Loader variant="card" count={3} />
-      ) : error ? (
-        <div className="text-center py-16">
-          <h3 className="text-lg font-semibold mb-1">Failed to load reservations</h3>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <Button variant="outline" onClick={() => dispatch(fetchReservations())}>Try Again</Button>
-        </div>
-      ) : !activeList.length ? (
-        <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-          <CalendarIcon className="w-16 h-16 text-border mb-4" weight="duotone" />
-          <h3 className="text-lg font-semibold mb-1">
-            {tab === 'upcoming' ? 'No upcoming reservations' : 'No past reservations'}
-          </h3>
-          <p className="text-muted-foreground max-w-sm mb-6">
-            {tab === 'upcoming'
-              ? 'Book a table at your favorite restaurant.'
-              : 'Your past reservations will appear here.'}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {activeList.map((res) => (
-            <div key={res._id} className="relative">
-              <ReservationCard reservation={res} />
-              {res.status !== 'cancelled' && res.status !== 'completed' && (
-                <button
-                  onClick={() => setCancelId(res._id)}
-                  className="absolute top-4 right-4 text-xs text-destructive font-semibold hover:underline"
-                >
-                  Cancel
-                </button>
-              )}
-            </div>
+        <div className="flex gap-1 mb-6 bg-surface-muted rounded-full p-1 w-fit">
+          {['upcoming', 'past'].map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
+                tab === t ? 'bg-primary text-white shadow-[var(--shadow-button)]' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {t === 'upcoming' ? 'Upcoming' : 'Past'}
+            </button>
           ))}
         </div>
-      )}
+
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white border border-border rounded-[var(--radius-lg)] p-5 animate-pulse">
+                <div className="h-1.5 bg-border rounded-t-lg -mt-5 -mx-5 mb-5" style={{ width: 'calc(100% + 2.5rem)' }} />
+                <div className="flex justify-between mb-3">
+                  <div className="h-5 w-48 bg-border rounded" />
+                  <div className="h-5 w-20 bg-border rounded-full" />
+                </div>
+                <div className="flex gap-4">
+                  <div className="h-4 w-32 bg-border rounded" />
+                  <div className="h-4 w-20 bg-border rounded" />
+                  <div className="h-4 w-24 bg-border rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="text-center py-16 bg-white border border-border rounded-[var(--radius-lg)]">
+            <h3 className="text-lg font-semibold mb-1">Failed to load reservations</h3>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button variant="outline" onClick={() => dispatch(fetchReservations())}>Try Again</Button>
+          </div>
+        ) : !activeList.length ? (
+          <div className="flex flex-col items-center justify-center py-16 px-4 text-center bg-white border border-border rounded-[var(--radius-lg)]">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-light mb-4">
+              <CalendarIcon className="w-8 h-8 text-primary" weight="duotone" />
+            </div>
+            <h3 className="text-lg font-semibold mb-1">
+              {tab === 'upcoming' ? 'No upcoming reservations' : 'No past reservations'}
+            </h3>
+            <p className="text-muted-foreground max-w-sm mb-6">
+              {tab === 'upcoming'
+                ? 'Book a table at your favorite restaurant to get started.'
+                : 'Your completed or cancelled reservations will appear here.'}
+            </p>
+            {tab === 'upcoming' && (
+              <Link to="/restaurants" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-semibold text-white transition-colors hover:bg-primary-hover">
+                <Storefront className="h-4 w-4" weight="fill" /> Browse restaurants
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {activeList.map((res) => (
+              <ReservationCard key={res._id} reservation={res} onCancel={setCancelId} />
+            ))}
+          </div>
+        )}
+      </div>
 
       <Modal
         isOpen={!!cancelId}
@@ -116,12 +136,12 @@ function ReservationsPage() {
         footer={
           <>
             <Button variant="outline" onClick={() => setCancelId(null)}>Keep It</Button>
-            <Button variant="destructive" loading={cancelling} onClick={handleCancel}>Cancel Reservation</Button>
+            <Button variant="destructive" loading={cancelling} onClick={handleCancel}>Yes, Cancel</Button>
           </>
         }
       >
         <p className="text-muted-foreground">
-          Are you sure you want to cancel this reservation? This cannot be undone.
+          Are you sure you want to cancel this reservation? This action cannot be undone.
         </p>
       </Modal>
     </motion.div>
