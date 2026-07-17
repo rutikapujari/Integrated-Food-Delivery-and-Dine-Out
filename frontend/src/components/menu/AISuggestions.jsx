@@ -80,9 +80,9 @@ function AISuggestions() {
           >
             {suggestions.map((item) => (
               <AISuggestionCard
-                key={item._id}
+                key={item.menuItemId || item.name}
                 item={item}
-                onClick={() => navigate(`/restaurants/${item.restaurantId}?highlight=${item._id}`)}
+                onClick={() => navigate(`/menu?highlight=${item.menuItemId}`)}
               />
             ))}
           </motion.div>

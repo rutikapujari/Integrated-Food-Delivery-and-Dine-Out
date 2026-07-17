@@ -19,7 +19,7 @@ function AddToCartButton({ item, variant = 'icon', size = 'md' }) {
   const iconSize = isSizeSm ? 'w-3.5 h-3.5' : 'w-4 h-4'
   const btnSize = isSizeSm ? 'w-7 h-7' : 'w-8 h-8'
 
-  const doAdd = useCallback((menuItem) => {
+  const doAdd = useCallback((menuItem, replaceCart = false) => {
     dispatch(addToCart({
       menuItemId: menuItem._id,
       name: menuItem.name,
@@ -28,6 +28,7 @@ function AddToCartButton({ item, variant = 'icon', size = 'md' }) {
       restaurantId: menuItem.restaurantId,
       restaurantName: menuItem.restaurantName,
       quantity: 1,
+      replaceCart,
     })).then(() => {
       notify.success(`Added ${menuItem.name} to cart`)
     })
@@ -35,19 +36,18 @@ function AddToCartButton({ item, variant = 'icon', size = 'md' }) {
 
   const handleAdd = useCallback((event) => {
     event?.stopPropagation()
-    if (restaurantId && restaurantId !== item.restaurantId && items.length > 0) {
+    if (restaurantId && restaurantId !== item.restaurantId) {
       setPendingItem(item)
       setShowConfirm(true)
       return
     }
     doAdd(item)
-  }, [restaurantId, item, items.length, doAdd])
+  }, [restaurantId, item, doAdd])
 
   const confirmSwitch = () => {
     setShowConfirm(false)
     if (pendingItem) {
-      dispatch(removeFromCart(items[0].menuItemId))
-      setTimeout(() => doAdd(pendingItem), 100)
+      doAdd(pendingItem, true)
     }
   }
 

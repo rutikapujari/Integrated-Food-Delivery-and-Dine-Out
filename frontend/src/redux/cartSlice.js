@@ -16,6 +16,14 @@ export const addToCart = createAsyncThunk('cart/addToCart', async (cartItem, { r
     const { data } = await cartService.addItem(cartItem)
     return data
   } catch (err) {
+    if (err.response?.status === 409 && !cartItem.replaceCart) {
+      try {
+        const { data } = await cartService.addItem({ ...cartItem, replaceCart: true })
+        return data
+      } catch (retryErr) {
+        return rejectWithValue(retryErr.response?.data?.message || 'Failed to add item')
+      }
+    }
     return rejectWithValue(err.response?.data?.message || 'Failed to add item')
   }
 })
@@ -107,7 +115,11 @@ const cartSlice = createSlice({
         const computed = computeTotals(state.items, state.coupon)
         Object.assign(state, computed)
       })
-      .addCase(fetchCart.rejected, (state, action) => { state.loading = false; state.error = action.payload })
+      .addCase(fetchCart.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+        state.restaurantId = null
+      })
       .addCase(addToCart.pending, (state) => { state.loading = true; state.error = null })
       .addCase(addToCart.fulfilled, (state, action) => {
         state.loading = false
@@ -116,7 +128,7 @@ const cartSlice = createSlice({
         const computed = computeTotals(state.items, state.coupon)
         Object.assign(state, computed)
       })
-      .addCase(addToCart.rejected, (state, action) => { state.loading = false; state.error = action.payload })
+      .addCase(addToCart.rejected, (state, action) => { state.loading = false; state.error = action.payload; state.restaurantId = null })
       .addCase(updateCartQuantity.pending, (state) => { state.loading = true })
       .addCase(updateCartQuantity.fulfilled, (state, action) => {
         state.loading = false
