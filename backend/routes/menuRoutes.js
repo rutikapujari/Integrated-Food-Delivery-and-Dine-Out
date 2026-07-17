@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const auth = require("../middleware/auth");
-const authorize = require("../middleware/role");
 
 const {
   createMenuItem,
@@ -25,13 +24,13 @@ router.get("/restaurant/:restaurantId", getMenuByRestaurant);
 // Get single menu item
 router.get("/:id", getMenuItemById);
 
-// Create menu item
-router.post("/", auth, authorize("restaurant", "admin"), createMenuItem);
+// Create menu item (auth required, ownership checked in controller)
+router.post("/", auth, createMenuItem);
 
-// Update menu item
-router.put("/:id", auth, authorize("restaurant", "admin"), updateMenuItem);
+// Update menu item (auth required, ownership checked in controller)
+router.put("/:id", auth, updateMenuItem);
 
-// Delete menu item
-router.delete("/:id", auth, authorize("restaurant", "admin"), deleteMenuItem);
+// Delete menu item (auth required, ownership checked in controller)
+router.delete("/:id", auth, deleteMenuItem);
 
 module.exports = router;
