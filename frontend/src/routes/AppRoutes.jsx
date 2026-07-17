@@ -11,6 +11,8 @@ import RestaurantDetailPage from '../pages/RestaurantDetailPage'
 import MenuPage from '../pages/MenuPage'
 import CartPage from '../pages/CartPage'
 import CheckoutPage from '../pages/CheckoutPage'
+import PaymentSuccessPage from '../pages/PaymentSuccessPage'
+import PaymentFailedPage from '../pages/PaymentFailedPage'
 import OrdersPage from '../pages/OrdersPage'
 import OrderTrackingPage from '../pages/OrderTrackingPage'
 import ProfilePage from '../pages/ProfilePage'
@@ -51,6 +53,12 @@ function AppRoutes() {
         } />
         <Route path="/checkout" element={
           <ProtectedRoute><CheckoutPage /></ProtectedRoute>
+        } />
+        <Route path="/payment-success" element={
+          <ProtectedRoute><PaymentSuccessPage /></ProtectedRoute>
+        } />
+        <Route path="/payment-failed" element={
+          <ProtectedRoute><PaymentFailedPage /></ProtectedRoute>
         } />
         <Route path="/orders" element={
           <ProtectedRoute><OrdersPage /></ProtectedRoute>

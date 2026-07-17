@@ -22,11 +22,11 @@ function MenuPage() {
   }, [setSearchParams])
 
   return (
-    <motion.div {...pageTransition} className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-10">
-      <div className="mb-7 rounded-3xl bg-gradient-to-r from-primary-dark via-primary to-orange-400 px-6 py-8 text-white shadow-lg shadow-orange-950/10 md:px-9">
-        <p className="mb-2 text-sm font-bold uppercase tracking-[0.16em] text-orange-100">FoodHub menu</p>
-        <h1 className="font-display text-4xl leading-none md:text-5xl">What are you craving?</h1>
-        <p className="mt-3 max-w-xl text-white/85">Discover freshly prepared dishes from restaurants around you. Add your favourites and track every order live.</p>
+    <motion.div {...pageTransition} className="mx-auto w-full max-w-7xl px-4 py-7 md:px-8 md:py-9">
+      <div className="mb-7 border-b border-border pb-6">
+        <p className="mb-1 text-sm font-semibold text-primary">FoodHub delivery</p>
+        <h1 className="text-3xl font-bold text-foreground md:text-4xl">Order your favourites</h1>
+        <p className="mt-2 text-muted-foreground">Fresh dishes from restaurants around you, ready to add to your cart.</p>
       </div>
       <MenuSearch value={search} onChange={handleSearch} />
       <MenuList showCategories />

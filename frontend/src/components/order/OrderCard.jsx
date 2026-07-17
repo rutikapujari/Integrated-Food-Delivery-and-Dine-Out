@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../../utils/formatCurrency'
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '../../utils/constants'
-import { Clock, MapPin } from '../../utils/icons'
+import { CaretRight, Clock } from '../../utils/icons'
 
 function OrderCard({ order }) {
   const navigate = useNavigate()
@@ -18,16 +18,14 @@ function OrderCard({ order }) {
   return (
     <div
       onClick={() => navigate(`/orders/${order._id}`)}
-      className="bg-white border border-border rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] p-5 cursor-pointer hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-all duration-200"
+      className="group cursor-pointer rounded-lg border border-border bg-white p-5 shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[var(--shadow-card-hover)]"
     >
       <div className="flex items-start justify-between mb-3">
         <div>
           <h3 className="font-semibold">{order.restaurantName || order.restaurant?.name}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Order #{order._id?.slice(-8).toUpperCase()}</p>
         </div>
-        <span className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold ${statusColorClass[colorKey]}`}>
-          {statusLabel}
-        </span>
+        <div className="flex items-center gap-2"><span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${statusColorClass[colorKey]}`}>{statusLabel}</span><CaretRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" weight="bold" /></div>
       </div>
 
       <div className="border-t border-border pt-3 mb-3">

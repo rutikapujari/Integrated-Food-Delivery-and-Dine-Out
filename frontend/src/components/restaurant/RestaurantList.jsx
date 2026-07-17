@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import { Store } from "lucide-react";
 
-import { fetchRestaurants } from "../../redux/restaurantSlice";
+import { clearFilters, fetchRestaurants, setPage } from "../../redux/restaurantSlice";
 import RestaurantCard from "./RestaurantCard";
 import Pagination from "../common/Pagination";
 import Loader from "../common/Loader";
@@ -52,6 +52,11 @@ function RestaurantList({ limit, showPagination = true }) {
   }
 
   if (!list || list.length === 0) {
+    const clearAllFilters = () => {
+      dispatch(clearFilters());
+      dispatch(setPage(1));
+    };
+
     return (
       <EmptyState
         icon={Store}
@@ -59,7 +64,7 @@ function RestaurantList({ limit, showPagination = true }) {
         description="Try adjusting your search or filters."
         action={{
           label: "Clear Filters",
-          onClick: () => dispatch(fetchRestaurants()),
+          onClick: clearAllFilters,
         }}
       />
     );

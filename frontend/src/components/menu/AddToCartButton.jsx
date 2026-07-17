@@ -19,15 +19,6 @@ function AddToCartButton({ item, variant = 'icon', size = 'md' }) {
   const iconSize = isSizeSm ? 'w-3.5 h-3.5' : 'w-4 h-4'
   const btnSize = isSizeSm ? 'w-7 h-7' : 'w-8 h-8'
 
-  const handleAdd = useCallback(() => {
-    if (restaurantId && restaurantId !== item.restaurantId && items.length > 0) {
-      setPendingItem(item)
-      setShowConfirm(true)
-      return
-    }
-    doAdd(item)
-  }, [restaurantId, item, items.length])
-
   const doAdd = useCallback((menuItem) => {
     dispatch(addToCart({
       menuItemId: menuItem._id,
@@ -41,6 +32,16 @@ function AddToCartButton({ item, variant = 'icon', size = 'md' }) {
       notify.success(`Added ${menuItem.name} to cart`)
     })
   }, [dispatch])
+
+  const handleAdd = useCallback((event) => {
+    event?.stopPropagation()
+    if (restaurantId && restaurantId !== item.restaurantId && items.length > 0) {
+      setPendingItem(item)
+      setShowConfirm(true)
+      return
+    }
+    doAdd(item)
+  }, [restaurantId, item, items.length, doAdd])
 
   const confirmSwitch = () => {
     setShowConfirm(false)
@@ -70,7 +71,10 @@ function AddToCartButton({ item, variant = 'icon', size = 'md' }) {
     return (
       <>
         <button
+          type="button"
           onClick={handleAdd}
+          aria-label={`Add ${item.name} to cart`}
+          title="Add to cart"
           className={`${btnSize} bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary-hover transition-colors active:scale-95`}
         >
           <Plus className={iconSize} />
@@ -92,6 +96,7 @@ function AddToCartButton({ item, variant = 'icon', size = 'md' }) {
     return (
       <div className="flex items-center gap-2">
         <button
+          type="button"
           onClick={() =>
             quantity <= 1
               ? dispatch(removeFromCart(item._id))
@@ -103,6 +108,7 @@ function AddToCartButton({ item, variant = 'icon', size = 'md' }) {
         </button>
         <span className={`${isSizeSm ? 'w-6' : 'w-8'} text-center font-semibold text-sm`}>{quantity}</span>
         <button
+          type="button"
           onClick={() => dispatch(updateCartQuantity({ menuItemId: item._id, quantity: quantity + 1 }))}
           className={`${btnSize} rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary-hover transition-colors`}
         >
@@ -115,6 +121,7 @@ function AddToCartButton({ item, variant = 'icon', size = 'md' }) {
   return (
     <div className="flex items-center gap-1.5">
       <button
+        type="button"
         onClick={() =>
           quantity <= 1
             ? dispatch(removeFromCart(item._id))
@@ -126,6 +133,7 @@ function AddToCartButton({ item, variant = 'icon', size = 'md' }) {
       </button>
       <span className={`${isSizeSm ? 'w-5' : 'w-6'} text-center font-semibold text-xs`}>{quantity}</span>
       <button
+        type="button"
         onClick={() => dispatch(updateCartQuantity({ menuItemId: item._id, quantity: quantity + 1 }))}
         className={`${btnSize} rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary-hover transition-colors`}
       >

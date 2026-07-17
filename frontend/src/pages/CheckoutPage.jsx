@@ -1,16 +1,25 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { CreditCard, Banknote, Smartphone, Building2, Wallet, Shield, ChevronRight } from 'lucide-react'
 import { pageTransition } from '../utils/motion'
 import { clearCart } from '../redux/cartSlice'
 import { createOrder } from '../redux/orderSlice'
+import { createRazorpayOrder, verifyRazorpayPayment } from '../redux/paymentSlice'
 import { formatCurrency } from '../utils/formatCurrency'
 import { notify } from '../utils/toast'
 import DeliveryAddress from '../components/cart/DeliveryAddress'
 import CartSummary from '../components/cart/CartSummary'
 import Button from '../components/common/Button'
-import Loader from '../components/common/Loader'
+
+const PAYMENT_METHODS = [
+  { value: 'cod', label: 'Cash on Delivery', icon: Banknote, description: 'Pay when your food arrives' },
+  { value: 'upi', label: 'UPI', icon: Smartphone, description: 'Google Pay, PhonePe, Paytm & more' },
+  { value: 'card', label: 'Credit / Debit Card', icon: CreditCard, description: 'Visa, Mastercard, Rupay' },
+  { value: 'netbanking', label: 'Net Banking', icon: Building2, description: 'All major banks' },
+  { value: 'wallet', label: 'Wallets', icon: Wallet, description: 'Paytm, Mobikwik, Freecharge' },
+]
 
 function CheckoutPage() {
   const dispatch = useDispatch()
@@ -18,6 +27,7 @@ function CheckoutPage() {
   const { user } = useSelector((state) => state.auth)
   const cart = useSelector((state) => state.cart)
   const { loading: orderLoading } = useSelector((state) => state.order)
+  const { loading: paymentLoading } = useSelector((state) => state.payment)
 
   const [selectedAddress, setSelectedAddress] = useState(null)
   const [paymentMethod, setPaymentMethod] = useState('cod')
@@ -25,6 +35,127 @@ function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false)
 
   const addresses = user?.addresses || []
+
+  const loadRazorpayScript = useCallback(() => {
+    return new Promise((resolve) => {
+      if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) {
+        resolve(true)
+        return
+      }
+      const script = document.createElement('script')
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+      script.onload = () => resolve(true)
+      script.onerror = () => resolve(false)
+      document.body.appendChild(script)
+    })
+  }, [])
+
+  const handleOnlinePayment = useCallback(async () => {
+    const scriptLoaded = await loadRazorpayScript()
+    if (!scriptLoaded) {
+      notify.error('Failed to load payment gateway. Please check your internet.')
+      setIsProcessing(false)
+      return
+    }
+
+    try {
+      const orderResult = await dispatch(createOrder({
+        items: cart.items.map((i) => ({
+          menuItemId: i.menuItemId,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+        restaurantId: cart.restaurantId,
+        deliveryAddress: selectedAddress,
+        paymentMethod,
+        totalAmount: cart.total,
+      }))
+
+      if (!createOrder.fulfilled.match(orderResult)) {
+        notify.error(orderResult.payload || 'Failed to create order')
+        setIsProcessing(false)
+        return
+      }
+
+      const createdOrder = orderResult.payload.order
+
+      const razorpayResult = await dispatch(createRazorpayOrder(createdOrder._id))
+
+      if (!createRazorpayOrder.fulfilled.match(razorpayResult)) {
+        notify.error(razorpayResult.payload || 'Failed to initiate payment')
+        setIsProcessing(false)
+        return
+      }
+
+      const razorpayData = razorpayResult.payload
+
+      const options = {
+        key: razorpayData.keyId,
+        amount: razorpayData.amount,
+        currency: razorpayData.currency,
+        name: 'Food Delivery',
+        description: `Order #${createdOrder._id}`,
+        order_id: razorpayData.razorpayOrderId,
+        prefill: {
+          name: razorpayData.customerName || user?.name || '',
+          email: razorpayData.customerEmail || user?.email || '',
+          contact: razorpayData.customerPhone || user?.phone || '',
+        },
+        theme: {
+          color: '#e11d48',
+        },
+        modal: {
+          confirm_close: true,
+          ondismiss: async () => {
+            setPaymentError('Payment was cancelled. Your order is saved but not paid.')
+            notify.error('Payment cancelled')
+            setIsProcessing(false)
+          },
+        },
+        handler: async (response) => {
+          try {
+            const verifyResult = await dispatch(verifyRazorpayPayment({
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            }))
+
+            if (verifyRazorpayPayment.fulfilled.match(verifyResult)) {
+              dispatch(clearCart())
+              notify.success('Payment successful!')
+              navigate(`/payment-success?orderId=${createdOrder._id}`)
+            } else {
+              notify.error(verifyResult.payload || 'Payment verification failed')
+              navigate(`/payment-failed?orderId=${createdOrder._id}`)
+            }
+          } catch (err) {
+            navigate(`/payment-failed?orderId=${createdOrder._id}`)
+          } finally {
+            setIsProcessing(false)
+          }
+        },
+      }
+
+      const rzp = new window.Razorpay(options)
+
+      rzp.on('payment.failed', async (response) => {
+        setPaymentError('Payment failed. Please try again.')
+        notify.error('Payment failed')
+        setIsProcessing(false)
+
+        if (response.error?.metadata?.order_id) {
+          navigate(`/payment-failed?orderId=${createdOrder._id}`)
+        }
+      })
+
+      rzp.open()
+    } catch (err) {
+      setPaymentError(err.message || 'Payment failed. Please try again.')
+      notify.error('Payment failed')
+      setIsProcessing(false)
+    }
+  }, [dispatch, cart, selectedAddress, paymentMethod, user, navigate, loadRazorpayScript])
 
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
@@ -35,45 +166,35 @@ function CheckoutPage() {
     setIsProcessing(true)
     setPaymentError(null)
 
-    try {
-      if (paymentMethod === 'online') {
-        const { paymentService } = await import('../services/paymentService')
-        const { data } = await paymentService.createCheckout({
-          items: cart.items,
-          addressId: selectedAddress._id,
-          total: cart.total,
-        })
-        if (data.url) {
-          window.location.href = data.url
-          return
+    if (paymentMethod === 'cod') {
+      try {
+        const result = await dispatch(createOrder({
+          items: cart.items.map((i) => ({
+            menuItemId: i.menuItemId,
+            name: i.name,
+            price: i.price,
+            quantity: i.quantity,
+          })),
+          restaurantId: cart.restaurantId,
+          deliveryAddress: selectedAddress,
+          paymentMethod: 'cod',
+          totalAmount: cart.total,
+        }))
+
+        if (createOrder.fulfilled.match(result)) {
+          dispatch(clearCart())
+          notify.success('Order placed successfully!')
+          navigate(`/payment-success?orderId=${result.payload.order._id}`)
+        } else {
+          notify.error(result.payload || 'Failed to place order')
         }
+      } catch (err) {
+        notify.error('Failed to place order. Please try again.')
+      } finally {
+        setIsProcessing(false)
       }
-
-      const result = await dispatch(createOrder({
-        items: cart.items.map((i) => ({
-          menuItemId: i.menuItemId,
-          name: i.name,
-          price: i.price,
-          quantity: i.quantity,
-        })),
-        restaurantId: cart.restaurantId,
-        address: selectedAddress,
-        paymentMethod,
-        totalAmount: cart.total,
-      }))
-
-      if (createOrder.fulfilled.match(result)) {
-        dispatch(clearCart())
-        notify.success('Order placed successfully!')
-        navigate(`/orders/${result.payload.order._id}`)
-      } else {
-        notify.error(result.payload || 'Failed to place order')
-      }
-    } catch (err) {
-      setPaymentError(err.message || 'Payment failed')
-      notify.error('Failed to place order. Please try again.')
-    } finally {
-      setIsProcessing(false)
+    } else {
+      handleOnlinePayment()
     }
   }
 
@@ -84,7 +205,8 @@ function CheckoutPage() {
 
   return (
     <motion.div {...pageTransition} className="max-w-4xl mx-auto px-4 md:px-8 py-8">
-      <h1 className="font-display text-3xl md:text-4xl mb-8">Checkout</h1>
+      <h1 className="font-display text-3xl md:text-4xl mb-2">Checkout</h1>
+      <p className="text-muted-foreground mb-8">{cart.items.length} item{cart.items.length > 1 ? 's' : ''} in your order</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
@@ -98,44 +220,93 @@ function CheckoutPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold mb-4">Payment</h2>
-            <div className="p-6 border border-border rounded-[var(--radius-lg)] space-y-4">
-              {[
-                { value: 'cod', label: 'Cash on Delivery' },
-                { value: 'online', label: 'Pay Online (UPI/Card/NetBanking)' },
-              ].map((method) => (
-                <label
-                  key={method.value}
-                  className="flex items-center gap-3 p-3 border border-border rounded-[var(--radius-md)] cursor-pointer hover:border-primary transition-colors"
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value={method.value}
-                    checked={paymentMethod === method.value}
-                    onChange={() => setPaymentMethod(method.value)}
-                    className="accent-primary"
-                  />
-                  <span className="font-medium text-sm">{method.label}</span>
-                </label>
-              ))}
-              {paymentError && (
-                <p className="text-destructive text-sm mt-2">{paymentError}</p>
-              )}
+            <h2 className="text-lg font-semibold mb-4">Payment Method</h2>
+            <div className="border border-border rounded-[var(--radius-lg)] overflow-hidden">
+              {PAYMENT_METHODS.map((method, index) => {
+                const Icon = method.icon
+                const isSelected = paymentMethod === method.value
+                return (
+                  <label
+                    key={method.value}
+                    className={`flex items-center gap-4 p-4 cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'bg-primary/5 border-l-4 border-l-primary'
+                        : 'hover:bg-surface-muted border-l-4 border-l-transparent'
+                    } ${index !== PAYMENT_METHODS.length - 1 ? 'border-b border-border' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="payment"
+                      value={method.value}
+                      checked={isSelected}
+                      onChange={() => setPaymentMethod(method.value)}
+                      className="sr-only"
+                    />
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      isSelected ? 'bg-primary text-white' : 'bg-surface-muted text-muted-foreground'
+                    }`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="font-medium text-sm">{method.label}</span>
+                      <p className="text-xs text-muted-foreground mt-0.5">{method.description}</p>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      isSelected ? 'border-primary' : 'border-border'
+                    }`}>
+                      {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                    </div>
+                  </label>
+                )
+              })}
             </div>
+
+            {paymentError && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                <p className="text-destructive text-sm">{paymentError}</p>
+              </div>
+            )}
+
+            {paymentMethod !== 'cod' && (
+              <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                <Shield className="w-4 h-4" />
+                <span>Secured by Razorpay. Your payment info is encrypted.</span>
+              </div>
+            )}
           </section>
         </div>
 
         <div className="space-y-6">
           <CartSummary />
+
+          <div className="bg-white border border-border rounded-[var(--radius-lg)] p-4">
+            <div className="flex items-center justify-between text-sm text-muted-foreground mb-1">
+              <span>Payment via</span>
+              <span className="font-medium text-foreground capitalize">
+                {PAYMENT_METHODS.find(m => m.value === paymentMethod)?.label}
+              </span>
+            </div>
+            {paymentMethod !== 'cod' && (
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Processing</span>
+                <span className="font-medium text-green-600">Instant</span>
+              </div>
+            )}
+          </div>
+
           <Button
             size="lg"
             className="w-full"
-            loading={isProcessing}
+            loading={isProcessing || orderLoading || paymentLoading}
             onClick={handlePlaceOrder}
           >
-            Place Order &mdash; {formatCurrency(cart.total)}
+            {paymentMethod === 'cod' ? 'Place Order' : `Pay ${formatCurrency(cart.total)}`}
+            <ChevronRight className="w-5 h-5" />
           </Button>
+
+          <p className="text-xs text-center text-muted-foreground">
+            By placing this order, you agree to our Terms & Conditions
+          </p>
         </div>
       </div>
     </motion.div>

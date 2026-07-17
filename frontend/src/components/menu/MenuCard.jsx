@@ -19,9 +19,9 @@ function MenuCard({ item, onClick, showAddToCart = true }) {
       initial="rest"
       whileHover="hover"
       onClick={onClick}
-      className="group cursor-pointer overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[var(--shadow-card-hover)]"
+      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-lg border border-border bg-white shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-1 hover:border-border-hover hover:shadow-[var(--shadow-card-hover)]"
     >
-      <div className="relative h-48 overflow-hidden bg-slate-100">
+      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
         <img
           src={imageSrc}
           alt={item.name}
@@ -32,10 +32,9 @@ function MenuCard({ item, onClick, showAddToCart = true }) {
           }}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" />
         {item.isVegetarian && (
-          <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-success shadow-sm backdrop-blur">
-            <span className="h-2 w-2 rounded-sm border border-success"><span className="block h-1 w-1 translate-x-[2px] translate-y-[2px] rounded-full bg-success" /></span> Veg
+          <span className="absolute left-3 top-3 flex h-5 w-5 items-center justify-center rounded-sm border border-success bg-white shadow-sm" title="Vegetarian">
+            <span className="h-2 w-2 rounded-full bg-success" />
           </span>
         )}
         {item.isAvailable === false && (
@@ -47,14 +46,15 @@ function MenuCard({ item, onClick, showAddToCart = true }) {
         )}
       </div>
 
-      <div className="p-4">
+      <div className="flex flex-1 flex-col p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="truncate text-base font-bold text-slate-800">{item.name}</h3>
-            <p className="mt-1 line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground">{item.description || 'Freshly prepared with quality ingredients.'}</p>
+            <p className="mt-1 truncate text-sm text-muted-foreground">{item.restaurantId?.name || item.restaurantName || 'FoodHub kitchen'}</p>
+            <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground">{item.description || 'Freshly prepared with quality ingredients.'}</p>
           </div>
         </div>
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-auto flex items-center justify-between pt-4">
           <span className="text-lg font-bold text-slate-900">{formatCurrency(item.price)}</span>
           {showAddToCart && item.isAvailable !== false && <AddToCartButton item={cartItem} />}
         </div>
