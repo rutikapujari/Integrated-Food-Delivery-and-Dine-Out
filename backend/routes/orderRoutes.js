@@ -10,6 +10,7 @@ const {
   getOrderById,
   updateOrderStatus,
   cancelOrder,
+  updateOrderPayment,
 } = require("../controllers/orderController");
 
 // ===============================
@@ -31,5 +32,8 @@ router.put("/:id/status", auth, authorize("restaurant", "courier", "admin"), upd
 
 // Cancel Order
 router.put("/:id/cancel", auth, cancelOrder);
+
+// Update Order Payment Status (reconciliation)
+router.put("/:id/payment", auth, updateOrderPayment);
 
 module.exports = router;

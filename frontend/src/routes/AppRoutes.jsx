@@ -13,6 +13,7 @@ import CartPage from '../pages/CartPage'
 import CheckoutPage from '../pages/CheckoutPage'
 import PaymentSuccessPage from '../pages/PaymentSuccessPage'
 import PaymentFailedPage from '../pages/PaymentFailedPage'
+import PaymentsPage from '../pages/PaymentsPage'
 import OrdersPage from '../pages/OrdersPage'
 import OrderTrackingPage from '../pages/OrderTrackingPage'
 import ProfilePage from '../pages/ProfilePage'
@@ -59,6 +60,9 @@ function AppRoutes() {
         } />
         <Route path="/payment-failed" element={
           <ProtectedRoute><PaymentFailedPage /></ProtectedRoute>
+        } />
+        <Route path="/payments" element={
+          <ProtectedRoute><PaymentsPage /></ProtectedRoute>
         } />
         <Route path="/orders" element={
           <ProtectedRoute><OrdersPage /></ProtectedRoute>

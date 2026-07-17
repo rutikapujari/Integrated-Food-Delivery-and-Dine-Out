@@ -11,6 +11,9 @@ const {
   createRazorpayOrder,
   verifyRazorpayPayment,
   razorpayWebhook,
+  markCodPaid,
+  generateUpiQr,
+  confirmUpiPayment,
 } = require("../controllers/paymentController");
 
 // ==============================
@@ -33,6 +36,15 @@ router.post("/create-order", auth, createRazorpayOrder);
 
 // Verify Razorpay Payment
 router.post("/verify", auth, verifyRazorpayPayment);
+
+// Mark Cash on Delivery as Paid
+router.post("/cod-paid", auth, markCodPaid);
+
+// Generate UPI QR code for scanning
+router.post("/upi-qr", auth, generateUpiQr);
+
+// Confirm UPI payment after scanning QR
+router.post("/upi-confirm", auth, confirmUpiPayment);
 
 // Update payment
 router.put("/:id", auth, updatePayment);

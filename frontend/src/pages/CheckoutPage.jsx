@@ -6,12 +6,14 @@ import { CreditCard, Banknote, Smartphone, Building2, Wallet, Shield, ChevronRig
 import { pageTransition } from '../utils/motion'
 import { clearCart } from '../redux/cartSlice'
 import { createOrder } from '../redux/orderSlice'
-import { createRazorpayOrder, verifyRazorpayPayment } from '../redux/paymentSlice'
+import { createRazorpayOrder, verifyRazorpayPayment, generateUpiQr, confirmUpiPayment, updateOrderPaymentStatus } from '../redux/paymentSlice'
 import { formatCurrency } from '../utils/formatCurrency'
 import { notify } from '../utils/toast'
 import DeliveryAddress from '../components/cart/DeliveryAddress'
 import CartSummary from '../components/cart/CartSummary'
 import Button from '../components/common/Button'
+import Modal from '../components/common/Modal'
+import QrScanner from '../components/payment/QrScanner'
 
 const PAYMENT_METHODS = [
   { value: 'cod', label: 'Cash on Delivery', icon: Banknote, description: 'Pay when your food arrives' },
@@ -33,6 +35,11 @@ function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('cod')
   const [paymentError, setPaymentError] = useState(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [upiQr, setUpiQr] = useState(null)
+  const [upiOrderId, setUpiOrderId] = useState(null)
+  const [confirmingUpi, setConfirmingUpi] = useState(false)
+  const [upiTransactionId, setUpiTransactionId] = useState('')
+  const [showScanner, setShowScanner] = useState(false)
 
   const addresses = user?.addresses || []
 
@@ -111,6 +118,13 @@ function CheckoutPage() {
             setPaymentError('Payment was cancelled. Your order is saved but not paid.')
             notify.error('Payment cancelled')
             setIsProcessing(false)
+            try {
+              if (createdOrder?._id) {
+                await dispatch(updateOrderPaymentStatus({ orderId: createdOrder._id, paymentStatus: 'Pending' }))
+              }
+            } catch {
+              // non-blocking reconciliation
+            }
           },
         },
         handler: async (response) => {
@@ -129,7 +143,7 @@ function CheckoutPage() {
               notify.error(verifyResult.payload || 'Payment verification failed')
               navigate(`/payment-failed?orderId=${createdOrder._id}`)
             }
-          } catch (err) {
+          } catch {
             navigate(`/payment-failed?orderId=${createdOrder._id}`)
           } finally {
             setIsProcessing(false)
@@ -156,6 +170,81 @@ function CheckoutPage() {
       setIsProcessing(false)
     }
   }, [dispatch, cart, selectedAddress, paymentMethod, user, navigate, loadRazorpayScript])
+
+  const handleUpiQrPayment = useCallback(async () => {
+    try {
+      const orderResult = await dispatch(createOrder({
+        items: cart.items.map((i) => ({
+          menuItemId: i.menuItemId,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+        restaurantId: cart.restaurantId,
+        deliveryAddress: selectedAddress,
+        paymentMethod: 'upi',
+        totalAmount: cart.total,
+      }))
+
+      if (!createOrder.fulfilled.match(orderResult)) {
+        notify.error(orderResult.payload || 'Failed to create order')
+        setIsProcessing(false)
+        return
+      }
+
+      const createdOrder = orderResult.payload.order
+      const qrResult = await dispatch(generateUpiQr(createdOrder._id))
+
+      if (!generateUpiQr.fulfilled.match(qrResult)) {
+        notify.error(qrResult.payload || 'Failed to generate UPI QR')
+        setIsProcessing(false)
+        return
+      }
+
+      setUpiQr(qrResult.payload)
+      setUpiOrderId(createdOrder._id)
+    } catch (err) {
+      setPaymentError(err.message || 'Failed to start UPI payment')
+      notify.error('Failed to start UPI payment')
+    } finally {
+      setIsProcessing(false)
+    }
+  }, [dispatch, cart, selectedAddress])
+
+  const handleConfirmUpiPaid = async () => {
+    if (!upiOrderId) return
+    setConfirmingUpi(true)
+    try {
+      const result = await dispatch(confirmUpiPayment({
+        orderId: upiOrderId,
+        upiTransactionId: upiTransactionId.trim() || undefined,
+      }))
+      if (confirmUpiPayment.fulfilled.match(result)) {
+        dispatch(clearCart())
+        notify.success('UPI payment confirmed!')
+        setUpiQr(null)
+        setUpiTransactionId('')
+        navigate(`/payment-success?orderId=${upiOrderId}`)
+      } else {
+        notify.error(result.payload || 'Failed to confirm payment')
+      }
+    } finally {
+      setConfirmingUpi(false)
+    }
+  }
+
+  const handleScanUpi = (decoded) => {
+    setShowScanner(false)
+    try {
+      const url = new URL(decoded)
+      const txn = url.searchParams.get('tn') || url.searchParams.get('tr') || ''
+      if (txn) setUpiTransactionId(txn)
+    } catch {
+      const match = decoded.match(/(?:tr|tn)=([^&]+)/i)
+      if (match) setUpiTransactionId(match[1])
+    }
+    notify.success('Scanned. Enter the UPI transaction ID if not detected.')
+  }
 
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
@@ -188,11 +277,13 @@ function CheckoutPage() {
         } else {
           notify.error(result.payload || 'Failed to place order')
         }
-      } catch (err) {
+      } catch {
         notify.error('Failed to place order. Please try again.')
       } finally {
         setIsProcessing(false)
       }
+    } else if (paymentMethod === 'upi') {
+      handleUpiQrPayment()
     } else {
       handleOnlinePayment()
     }
@@ -212,11 +303,12 @@ function CheckoutPage() {
         <div className="lg:col-span-2 space-y-8">
           <section>
             <h2 className="text-lg font-semibold mb-4">Delivery Address</h2>
-            <DeliveryAddress
-              selectedAddress={selectedAddress}
-              addresses={addresses}
-              onSelect={setSelectedAddress}
-            />
+              <DeliveryAddress
+                selectedAddress={selectedAddress}
+                addresses={addresses}
+                onSelect={setSelectedAddress}
+                onAddAddress={setSelectedAddress}
+              />
           </section>
 
           <section>
@@ -267,7 +359,14 @@ function CheckoutPage() {
               </div>
             )}
 
-            {paymentMethod !== 'cod' && (
+            {paymentMethod === 'upi' && (
+              <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                <Shield className="w-4 h-4" />
+                <span>Scan the QR with any UPI app (GPay, PhonePe, Paytm) to pay.</span>
+              </div>
+            )}
+
+            {paymentMethod !== 'cod' && paymentMethod !== 'upi' && (
               <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
                 <Shield className="w-4 h-4" />
                 <span>Secured by Razorpay. Your payment info is encrypted.</span>
@@ -309,6 +408,74 @@ function CheckoutPage() {
           </p>
         </div>
       </div>
+
+      <Modal
+        isOpen={Boolean(upiQr)}
+        onClose={() => setUpiQr(null)}
+        title="Scan to Pay via UPI"
+        size="sm"
+      >
+        <div className="flex flex-col items-center text-center">
+          {upiQr?.qrCode && (
+            <img
+              src={upiQr.qrCode}
+              alt="UPI QR Code"
+              className="w-56 h-56 rounded-xl border border-border"
+            />
+          )}
+          <p className="mt-4 text-sm text-muted-foreground">
+            Scan this QR with any UPI app to pay
+          </p>
+          <p className="mt-1 font-semibold text-lg">
+            {formatCurrency(upiQr?.amount || cart.total)}
+          </p>
+          {upiQr?.upiId && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              UPI ID: {upiQr.upiId}
+            </p>
+          )}
+
+          <div className="mt-4 w-full text-left">
+            <label className="text-xs font-medium text-muted-foreground">
+              UPI Transaction ID (optional, auto-filled by scanning)
+            </label>
+            <input
+              type="text"
+              value={upiTransactionId}
+              onChange={(e) => setUpiTransactionId(e.target.value)}
+              placeholder="e.g. 1234567890"
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            />
+          </div>
+
+          <Button
+            variant="outline"
+            className="w-full mt-3"
+            onClick={() => setShowScanner(true)}
+          >
+            Scan QR to capture
+          </Button>
+
+          <Button
+            className="w-full mt-3"
+            loading={confirmingUpi}
+            onClick={handleConfirmUpiPaid}
+          >
+            I have completed the payment
+          </Button>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Click the button above only after your UPI app shows payment success.
+          </p>
+        </div>
+      </Modal>
+
+      <QrScanner
+        isOpen={showScanner}
+        onClose={() => setShowScanner(false)}
+        onScan={handleScanUpi}
+        title="Scan UPI QR"
+        mode="qr"
+      />
     </motion.div>
   )
 }

@@ -3,6 +3,7 @@ const Cart = require("../models/Cart");
 const MenuItem = require("../models/MenuItem");
 const Restaurant = require("../models/Restaurant");
 const User = require("../models/User");
+const Payment = require("../models/Payment");
 const mongoose = require("mongoose");
 const { emitOrderUpdate } = require("../sockets/socket");
 const { sendNotificationEmail } = require("../services/notificationService");
@@ -220,6 +221,9 @@ const createOrder = async (req, res) => {
       });
     }
 
+    const resolvedPaymentMethod =
+      normalizePaymentMethod(paymentMethod) || "Cash on Delivery";
+
     const order = await Order.create({
       userId,
       restaurantId: orderSource.restaurantId,
@@ -227,7 +231,7 @@ const createOrder = async (req, res) => {
       totalAmount: orderSource.totalAmount,
       deliveryAddress: deliveryAddress || "Default delivery address",
       deliveryLocation,
-      paymentMethod: normalizePaymentMethod(paymentMethod),
+      paymentMethod: resolvedPaymentMethod,
       statusHistory: [
         {
           status: "pending",
@@ -235,6 +239,17 @@ const createOrder = async (req, res) => {
         },
       ],
     });
+
+    if (resolvedPaymentMethod === "Cash on Delivery") {
+      await Payment.create({
+        orderId: order._id,
+        userId,
+        amount: order.totalAmount,
+        currency: "inr",
+        paymentMethod: "Cash on Delivery",
+        paymentStatus: "Pending",
+      });
+    }
 
     if (orderSource.sourceCart) {
       orderSource.sourceCart.items = [];
@@ -478,10 +493,93 @@ const cancelOrder = async (req, res) => {
   }
 };
 
+// ====================================
+// Update Order Payment Status (reconciliation)
+// ====================================
+const updateOrderPayment = async (req, res) => {
+  try {
+    const orderId = mongoose.Types.ObjectId.isValid(req.params.id)
+      ? req.params.id
+      : (await Order.findOne().sort({ createdAt: -1 }))?._id;
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    const isOwner = await isRestaurantOwnerForOrder(req.user, order);
+    const canUpdate =
+      req.user.role === "admin" ||
+      order.userId.toString() === req.user._id.toString() ||
+      order.courierId?.toString() === req.user._id.toString() ||
+      isOwner;
+
+    if (!canUpdate) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this order's payment",
+      });
+    }
+
+    const { paymentStatus } = req.body;
+
+    if (paymentStatus !== "Pending" && paymentStatus !== "Paid") {
+      return res.status(400).json({
+        success: false,
+        message: "paymentStatus must be 'Pending' or 'Paid'",
+      });
+    }
+
+    if (order.paymentStatus === paymentStatus) {
+      return res.status(200).json({
+        success: true,
+        message: "Payment status unchanged",
+        order,
+      });
+    }
+
+    order.paymentStatus = paymentStatus;
+
+    let payment = await Payment.findOne({ orderId: order._id });
+    if (!payment) {
+      payment = await Payment.create({
+        orderId: order._id,
+        userId: order.userId,
+        amount: order.totalAmount,
+        currency: "inr",
+        paymentMethod: order.paymentMethod,
+        paymentStatus,
+      });
+    } else {
+      payment.paymentStatus = paymentStatus;
+      await payment.save();
+    }
+
+    await order.save();
+    safeEmitOrderUpdate(order);
+
+    res.status(200).json({
+      success: true,
+      message: "Order payment status updated",
+      order,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createOrder,
   getMyOrders,
   getOrderById,
   updateOrderStatus,
   cancelOrder,
+  updateOrderPayment,
 };

@@ -8,6 +8,7 @@ import { formatCurrency } from '../utils/formatCurrency'
 import { ORDER_STATUS_LABELS } from '../utils/constants'
 import { useSocket } from '../hooks/useSocket'
 import OrderTimeline from '../components/order/OrderTimeline'
+import CodPaymentAction from '../components/payment/CodPaymentAction'
 import Loader from '../components/common/Loader'
 import { Truck, MapPin, Clock } from '../utils/icons'
 
@@ -68,6 +69,8 @@ function OrderTrackingPage() {
         <h2 className="font-semibold text-lg mb-4">Order Timeline</h2>
         <OrderTimeline status={activeOrder.status} />
       </div>
+
+      <CodPaymentAction order={activeOrder} />
 
       {activeOrder.address && (
         <div className="bg-white border border-border rounded-[var(--radius-lg)] p-6 mb-8">

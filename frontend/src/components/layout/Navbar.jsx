@@ -7,7 +7,7 @@ import NotificationBell from '../notification/NotificationBell'
 import NotificationDropdown from '../notification/NotificationDropdown'
 import {
   ShoppingCart, MagnifyingGlass, User, House,
-  Storefront, ForkKnife, ClipboardText, SignOut, List,
+  Storefront, ForkKnife, ClipboardText, SignOut, List, Receipt,
 } from '../../utils/icons'
 
 function Navbar({ onMenuOpen }) {
@@ -129,6 +129,9 @@ function Navbar({ onMenuOpen }) {
                       </Link>
                       <Link to="/orders" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-surface-muted" onClick={() => setShowUserMenu(false)}>
                         <ClipboardText className="w-4 h-4" /> Orders
+                      </Link>
+                      <Link to="/payments" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-surface-muted" onClick={() => setShowUserMenu(false)}>
+                        <Receipt className="w-4 h-4" /> Payments
                       </Link>
                       <button onClick={() => { logout(); setShowUserMenu(false) }} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-surface-muted w-full text-left text-destructive">
                         <SignOut className="w-4 h-4" /> Sign Out

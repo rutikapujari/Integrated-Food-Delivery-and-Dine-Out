@@ -1,5 +1,6 @@
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
+const QRCode = require("qrcode");
 const mongoose = require("mongoose");
 const Payment = require("../models/Payment");
 const Order = require("../models/Order");
@@ -286,6 +287,234 @@ const deletePayment = async (req, res) => {
 };
 
 // ======================================
+// Generate UPI QR Code for an Order
+// ======================================
+const generateUpiQr = async (req, res) => {
+  try {
+    const { orderId } = req.body;
+
+    if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Valid orderId is required" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    }
+
+    if (order.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only pay for your own orders",
+      });
+    }
+
+    if (order.paymentStatus === "Paid") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Order is already paid" });
+    }
+
+    const upiId = process.env.UPI_ID;
+    const payeeName = process.env.UPI_PAYEE_NAME || "Food Delivery";
+
+    if (!upiId) {
+      return res.status(500).json({
+        success: false,
+        message: "UPI_ID is not configured on the server",
+      });
+    }
+
+    const amount = Number(order.totalAmount).toFixed(2);
+    const upiString =
+      `upi://pay?pa=${encodeURIComponent(upiId)}` +
+      `&pn=${encodeURIComponent(payeeName)}` +
+      `&am=${encodeURIComponent(amount)}` +
+      `&cu=INR` +
+      `&tn=${encodeURIComponent(`Order ${order._id}`)}`;
+
+    const qrDataUrl = await QRCode.toDataURL(upiString, {
+      width: 320,
+      margin: 2,
+    });
+
+    let payment = await Payment.findOne({
+      orderId: order._id,
+      paymentMethod: "UPI",
+    });
+
+    if (!payment) {
+      payment = await Payment.create({
+        orderId: order._id,
+        userId: order.userId,
+        amount: order.totalAmount,
+        currency: "inr",
+        paymentMethod: "UPI",
+        paymentStatus: "Pending",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      qrCode: qrDataUrl,
+      upiString,
+      upiId,
+      payeeName,
+      amount: order.totalAmount,
+      orderId: order._id,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ======================================
+// Confirm UPI Payment (after scanning QR)
+// ======================================
+const confirmUpiPayment = async (req, res) => {
+  try {
+    const { orderId, upiTransactionId } = req.body;
+
+    if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Valid orderId is required" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    }
+
+    if (order.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only pay for your own orders",
+      });
+    }
+
+    let payment = await Payment.findOne({
+      orderId: order._id,
+      paymentMethod: "UPI",
+    });
+
+    if (!payment) {
+      payment = await Payment.create({
+        orderId: order._id,
+        userId: order.userId,
+        amount: order.totalAmount,
+        currency: "inr",
+        paymentMethod: "UPI",
+        paymentStatus: "Pending",
+      });
+    }
+
+    payment.paymentStatus = "Paid";
+    if (upiTransactionId) {
+      payment.razorpayPaymentId = upiTransactionId;
+    }
+    await payment.save();
+
+    order.paymentStatus = "Paid";
+    order.status = "confirmed";
+    await order.save();
+
+    await sendPaymentSuccessEmail(payment);
+
+    res.status(200).json({
+      success: true,
+      message: "UPI payment confirmed",
+      payment,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ======================================
+// Mark Cash on Delivery as Paid
+// ======================================
+const markCodPaid = async (req, res) => {
+  try {
+    const { orderId } = req.body;
+
+    if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Valid orderId is required" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    }
+
+    if (order.paymentMethod !== "Cash on Delivery") {
+      return res.status(400).json({
+        success: false,
+        message: "Order is not a Cash on Delivery order",
+      });
+    }
+
+    const isOwner = await Restaurant.findOne({
+      _id: order.restaurantId,
+      ownerId: req.user._id,
+    });
+
+    if (
+      req.user.role !== "admin" &&
+      req.user.role !== "courier" &&
+      !isOwner
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to collect this payment",
+      });
+    }
+
+    let payment = await Payment.findOne({
+      orderId: order._id,
+      paymentMethod: "Cash on Delivery",
+    });
+
+    if (!payment) {
+      payment = await Payment.create({
+        orderId: order._id,
+        userId: order.userId,
+        amount: order.totalAmount,
+        currency: "inr",
+        paymentMethod: "Cash on Delivery",
+        paymentStatus: "Pending",
+      });
+    }
+
+    payment.paymentStatus = "Paid";
+    await payment.save();
+
+    order.paymentStatus = "Paid";
+    await order.save();
+
+    await sendPaymentSuccessEmail(payment);
+
+    res.status(200).json({
+      success: true,
+      message: "Cash on Delivery payment collected",
+      payment,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ======================================
 // Create Razorpay Order
 // ======================================
 const createRazorpayOrder = async (req, res) => {
@@ -435,19 +664,23 @@ const verifyRazorpayPayment = async (req, res) => {
 // ======================================
 const razorpayWebhook = async (req, res) => {
   try {
-    const secret = process.env.RAZORPAY_SECRET;
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_SECRET;
     const signature = req.headers["x-razorpay-signature"];
+
+    const rawBody = Buffer.isBuffer(req.body)
+      ? req.body.toString("utf8")
+      : JSON.stringify(req.body);
 
     const expectedSignature = crypto
       .createHmac("sha256", secret)
-      .update(req.body.toString())
+      .update(rawBody)
       .digest("hex");
 
     if (signature !== expectedSignature) {
       return res.status(400).json({ success: false, message: "Invalid signature" });
     }
 
-    const event = req.body;
+    const event = JSON.parse(rawBody);
 
     if (event.event === "payment.captured") {
       const paymentData = event.payload.payment.entity;
@@ -497,4 +730,7 @@ module.exports = {
   createRazorpayOrder,
   verifyRazorpayPayment,
   razorpayWebhook,
+  markCodPaid,
+  generateUpiQr,
+  confirmUpiPayment,
 };

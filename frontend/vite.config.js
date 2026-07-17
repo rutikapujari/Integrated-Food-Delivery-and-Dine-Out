@@ -8,6 +8,9 @@ export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
   },
+  optimizeDeps: {
+    include: ['html5-qrcode'],
+  },
   server: {
     port: 5173,
     proxy: {
