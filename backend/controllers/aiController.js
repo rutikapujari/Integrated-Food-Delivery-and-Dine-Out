@@ -27,7 +27,7 @@ const getSuggestions = async (req, res) => {
         }
         // Aggregate ordered menu item counts for the user
         const pipeline = [
-            { $match: { userId: mongoose.Types.ObjectId(userId), status: { $ne: 'cancelled' } } },
+            { $match: { userId: new mongoose.Types.ObjectId(userId), status: { $ne: 'cancelled' } } },
             { $unwind: '$items' },
             { $group: { _id: '$items.menuItemId', count: { $sum: '$items.quantity' } } },
             { $sort: { count: -1 } },
