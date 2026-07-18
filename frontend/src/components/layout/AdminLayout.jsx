@@ -11,6 +11,7 @@ const pageTitles = {
   '/admin/orders': 'Orders',
   '/admin/users': 'Users',
   '/admin/restaurants': 'Restaurants',
+  '/admin/menu': 'Menu Items',
 }
 
 function AdminLayout() {
@@ -23,30 +24,33 @@ function AdminLayout() {
   const pageTitle = pageTitles[location.pathname] || 'Admin'
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-[#F5F5F5]">
       <AdminSidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
 
       <div className="flex-1 lg:ml-64">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-20">
+        <header className="h-14 bg-[#1B2838] text-white flex items-center justify-between px-4 md:px-6 sticky top-0 z-20 shadow-lg">
           <div className="flex items-center gap-3">
             <button
-              className="lg:hidden p-2 hover:bg-slate-100 rounded-lg"
+              className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
               onClick={() => setMobileOpen(true)}
             >
               <List className="w-5 h-5" />
             </button>
-            <h1 className="text-lg md:text-xl font-semibold text-slate-800">{pageTitle}</h1>
+            <h1 className="text-base md:text-lg font-bold tracking-wide">{pageTitle}</h1>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
-              <NotificationBell unread={unread} onClick={() => setNotifOpen(!notifOpen)} />
+              <button className="relative p-2 text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/10">
+                <NotificationBell onClick={() => setNotifOpen(!notifOpen)} unread={unread} />
+              </button>
               <NotificationDropdown isOpen={notifOpen} onClose={() => setNotifOpen(false)} />
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-semibold">
+            <div className="h-6 w-px bg-white/10 hidden sm:block" />
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-full bg-[#EA580C] flex items-center justify-center text-sm font-bold shadow-md">
                 {user?.name?.[0]?.toUpperCase() || 'A'}
               </div>
-              <span className="text-sm font-medium text-slate-700 hidden sm:block">{user?.name}</span>
+              <span className="text-sm font-medium text-white/80 hidden sm:block">{user?.name}</span>
             </div>
           </div>
         </header>

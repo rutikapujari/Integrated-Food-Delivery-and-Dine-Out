@@ -95,14 +95,8 @@ const authSlice = createSlice({
       .addCase(registerUser.fulfilled, (state) => { state.loading = false })
       .addCase(registerUser.rejected, (state, action) => { state.loading = false; state.error = action.payload })
       .addCase(verifyOTP.pending, (state) => { state.loading = true; state.error = null })
-      .addCase(verifyOTP.fulfilled, (state, action) => {
+      .addCase(verifyOTP.fulfilled, (state) => {
         state.loading = false
-        state.user = action.payload.user
-        state.token = action.payload.token
-        state.refreshToken = action.payload.refreshToken
-        state.isAuthenticated = true
-        localStorage.setItem('token', action.payload.token)
-        localStorage.setItem('refreshToken', action.payload.refreshToken)
       })
       .addCase(verifyOTP.rejected, (state, action) => { state.loading = false; state.error = action.payload })
       .addCase(fetchCurrentUser.pending, (state) => { state.loading = true })

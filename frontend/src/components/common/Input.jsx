@@ -42,8 +42,8 @@ function Input({
           placeholder={placeholder}
           disabled={disabled}
           className={[
-            'w-full h-11 px-4 rounded-[var(--radius-sm)] border bg-white',
-            'text-foreground placeholder:text-muted-foreground/60',
+            'w-full h-11 px-4 rounded-[var(--radius-sm)] border',
+            'placeholder:text-muted-foreground/60',
             'transition-all duration-150',
             'focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none',
             'disabled:bg-surface-muted disabled:opacity-60',
