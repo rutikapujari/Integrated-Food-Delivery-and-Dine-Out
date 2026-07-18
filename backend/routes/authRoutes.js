@@ -52,6 +52,7 @@ router.post('/register', async (req, res) => {
       password,
       role,
       phone,
+      vehicleNumber,
       avatar,
       address,
       location,
@@ -85,9 +86,47 @@ router.post('/register', async (req, res) => {
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'User already exists'
+      if (existingUser.isVerified) {
+        return res.status(400).json({
+          success: false,
+          message: 'User already exists'
+        });
+      }
+
+      const emailToken = crypto.randomBytes(32).toString('hex');
+      const emailOtp = generateOtp();
+
+      existingUser.name = name;
+      existingUser.password = password;
+      existingUser.role = normalizedRole;
+      existingUser.phone = phone;
+      existingUser.vehicleNumber = vehicleNumber;
+      existingUser.emailToken = emailToken;
+      existingUser.emailOtp = emailOtp;
+      existingUser.emailOtpExpire = getOtpExpiry();
+
+      await existingUser.save();
+
+      const verifyUrl = `http://localhost:3000/api/auth/verify/${emailToken}`;
+
+      if (isEmailConfigured()) {
+        await sendEmail(
+          existingUser.email,
+          'Verify Email',
+          `
+            <h2>Verify Account</h2>
+            <p>Your OTP is:</p>
+            <h1 style="letter-spacing:4px">${emailOtp}</h1>
+            <p>This OTP expires in 10 minutes.</p>
+            <p>You can also click the link below to verify your account.</p>
+            <a href="${verifyUrl}">Verify</a>
+          `
+        );
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: isEmailConfigured() ? 'Check email for OTP to verify' : 'Account updated. Please verify your email.'
       });
     }
 
@@ -100,6 +139,7 @@ router.post('/register', async (req, res) => {
       password,
       role: normalizedRole,
       phone,
+      vehicleNumber,
       avatar,
       address,
       location,

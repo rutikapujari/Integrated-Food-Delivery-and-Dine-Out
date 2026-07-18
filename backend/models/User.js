@@ -40,6 +40,12 @@ const userSchema = new mongoose.Schema({
         default: ""
     },
 
+    vehicleNumber: {
+        type: String,
+        trim: true,
+        default: ""
+    },
+
     avatar: {
         type: String,
         default: ""

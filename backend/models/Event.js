@@ -67,6 +67,12 @@ const eventSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    attendees: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     tags: [
       {
         type: String,

@@ -208,7 +208,13 @@ const rsvpEvent = async (req, res) => {
       return res.status(400).json({ success: false, message: "Event is fully booked" });
     }
 
+    if (event.attendees && event.attendees.includes(req.user.id)) {
+      return res.status(400).json({ success: false, message: "You have already RSVP'd to this event" });
+    }
+
     event.bookedCount += 1;
+    if (!event.attendees) event.attendees = [];
+    event.attendees.push(req.user.id);
     await event.save();
 
     res.status(200).json({ success: true, message: "RSVP confirmed", event });
