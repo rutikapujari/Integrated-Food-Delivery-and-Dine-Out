@@ -237,6 +237,34 @@ const getReviews = async (req, res) => {
 };
 
 // ======================================
+// Get Reviews By Current User
+// ======================================
+const getMyReviews = async (req, res) => {
+
+  try {
+
+    const reviews = await Review.find({ userId: req.user.id })
+      .populate("restaurantId", "name")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: reviews.length,
+      reviews,
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+
+  }
+
+};
+
+// ======================================
 // Get Review By ID
 // ======================================
 const getReviewById = async (req, res) => {
@@ -399,6 +427,7 @@ module.exports = {
   getReviews,
   getReviewById,
   getRestaurantReviews,
+  getMyReviews,
   updateReview,
   deleteReview,
 };

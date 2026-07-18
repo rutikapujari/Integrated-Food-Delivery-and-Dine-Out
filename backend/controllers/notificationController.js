@@ -1,5 +1,6 @@
 const Notification = require("../models/Notification");
 const User = require("../models/User");
+const { emitNotification } = require("../sockets/socket");
 
 const createNotification = async ({
   userId,
@@ -12,7 +13,7 @@ const createNotification = async ({
 }) => {
   if (!userId || !title || !message) return null;
 
-  return Notification.create({
+  const notification = await Notification.create({
     userId,
     title,
     message,
@@ -21,6 +22,10 @@ const createNotification = async ({
     actionUrl,
     metadata,
   });
+
+  emitNotification(notification);
+
+  return notification;
 };
 
 const sendError = (res, error) => {
@@ -169,7 +174,8 @@ const broadcastNotification = async (req, res) => {
     }));
 
     if (notifications.length) {
-      await Notification.insertMany(notifications);
+      const created = await Notification.insertMany(notifications);
+      created.forEach((notification) => emitNotification(notification));
     }
 
     res.status(201).json({

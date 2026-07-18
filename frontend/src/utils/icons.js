@@ -66,4 +66,9 @@ export {
   Coffee,
   Wine,
   Cake,
+  Trophy,
+  Gift,
+  Medal,
+  CookingPot,
+  PencilSimple,
 } from '@phosphor-icons/react'

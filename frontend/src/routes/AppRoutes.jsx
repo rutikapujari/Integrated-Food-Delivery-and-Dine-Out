@@ -25,6 +25,22 @@ import AdminRestaurantsPage from '../pages/admin/AdminRestaurantsPage'
 import AdminMenuPage from '../pages/admin/AdminMenuPage'
 import AdminLoginPage from '../pages/admin/AdminLoginPage'
 import AdminRegisterPage from '../pages/admin/AdminRegisterPage'
+import DeliveryPage from '../pages/DeliveryPage'
+import CourierLoginPage from '../pages/CourierLoginPage'
+import CourierRoute from '../components/layout/CourierRoute'
+import DeliveryLayout from '../components/layout/DeliveryLayout'
+import AvailableDeliveriesPage from '../pages/delivery/AvailableDeliveriesPage'
+import ActiveDeliveryPage from '../pages/delivery/ActiveDeliveryPage'
+import DeliveryEarningsPage from '../pages/delivery/DeliveryEarningsPage'
+import DeliveryProfilePage from '../pages/delivery/DeliveryProfilePage'
+import CourierRegisterPage from '../pages/CourierRegisterPage'
+import EventsPage from '../pages/EventsPage'
+import EventDetailPage from '../pages/EventDetailPage'
+import RestaurantRoute from '../components/layout/RestaurantRoute'
+import PartnerLayout from '../components/layout/PartnerLayout'
+import PartnerDashboardPage from '../pages/partner/PartnerDashboardPage'
+import PartnerMenuPage from '../pages/partner/PartnerMenuPage'
+import PartnerOrdersPage from '../pages/partner/PartnerOrdersPage'
 import BookReservationPage from '../pages/BookReservationPage'
 import RestaurantMenuManagePage from '../pages/RestaurantMenuManagePage'
 import ReservationsPage from '../pages/ReservationsPage'
@@ -41,11 +57,25 @@ function AppRoutes() {
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin/register" element={<AdminRegisterPage />} />
 
+      <Route path="/courier/login" element={<CourierLoginPage />} />
+      <Route path="/courier/register" element={<CourierRegisterPage />} />
+
       <Route element={<MainLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/restaurants" element={<RestaurantListPage />} />
         <Route path="/restaurants/:id" element={<RestaurantDetailPage />} />
         <Route path="/restaurants/:id/reviews" element={<RestaurantReviewsPage />} />
+        <Route path="/events" element={<EventsPage />} />
+        <Route path="/events/:id" element={<EventDetailPage />} />
+
+        <Route path="/partner" element={
+          <RestaurantRoute><PartnerLayout /></RestaurantRoute>
+        }>
+          <Route index element={<PartnerDashboardPage />} />
+          <Route path="menu" element={<PartnerMenuPage />} />
+          <Route path="orders" element={<PartnerOrdersPage />} />
+        </Route>
+
         <Route path="/menu" element={<MenuPage />} />
 
         <Route path="/dashboard" element={
@@ -91,6 +121,16 @@ function AppRoutes() {
         <Route path="/notifications" element={
           <ProtectedRoute><NotificationsPage /></ProtectedRoute>
         } />
+
+        <Route path="/delivery" element={
+          <CourierRoute><DeliveryLayout /></CourierRoute>
+        }>
+          <Route index element={<ActiveDeliveryPage />} />
+          <Route path="active" element={<ActiveDeliveryPage />} />
+          <Route path="available" element={<AvailableDeliveriesPage />} />
+          <Route path="earnings" element={<DeliveryEarningsPage />} />
+          <Route path="profile" element={<DeliveryProfilePage />} />
+        </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

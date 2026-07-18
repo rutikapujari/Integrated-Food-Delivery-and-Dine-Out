@@ -1,13 +1,21 @@
+import { useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useSelector, useDispatch } from 'react-redux'
 import { pageTransition } from '../utils/motion'
-import { useAuth } from '../hooks/useAuth'
+import { fetchCurrentUser } from '../redux/authSlice'
 import ProfileCard from '../components/profile/ProfileCard'
+import LoyaltyCard from '../components/profile/LoyaltyCard'
 import EditProfile from '../components/profile/EditProfile'
 import ProtectedRoute from '../components/layout/ProtectedRoute'
 import Loader from '../components/common/Loader'
 
 function ProfilePage() {
-  const { user, loading } = useAuth()
+  const dispatch = useDispatch()
+  const { user, loading } = useSelector((state) => state.auth)
+
+  useEffect(() => {
+    dispatch(fetchCurrentUser())
+  }, [dispatch])
 
   return (
     <ProtectedRoute>
@@ -18,6 +26,7 @@ function ProfilePage() {
           <Loader variant="page" />
         ) : (
           <div className="space-y-6">
+            <LoyaltyCard points={user?.loyaltyPoints || 0} />
             <ProfileCard user={user} />
             <EditProfile />
           </div>

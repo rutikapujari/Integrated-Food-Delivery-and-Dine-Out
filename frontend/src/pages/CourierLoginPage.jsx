@@ -6,14 +6,14 @@ import { z } from 'zod'
 import { useAuth } from '../hooks/useAuth'
 import Button from '../components/common/Button'
 import Input from '../components/common/Input'
-import { Envelope, Lock } from '../utils/icons'
+import { Envelope, Lock, Motorcycle } from '../utils/icons'
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 })
 
-function LoginPage() {
+function CourierLoginPage() {
   const { login, loading, error } = useAuth()
   const [serverError, setServerError] = useState(null)
   const location = useLocation()
@@ -33,21 +33,28 @@ function LoginPage() {
       return
     }
 
+    const isCourier = result.user?.role === 'courier'
+    if (!isCourier) {
+      setServerError('This account is not registered as a delivery partner.')
+      return
+    }
+
     const params = new URLSearchParams(location.search)
     const redirectTo = params.get('redirect')
-    const isAdmin = result.user?.role === 'admin' || result.user?.role === 'restaurant_admin'
-
-    navigate(redirectTo || (isAdmin ? '/admin' : '/dashboard'), { replace: true })
+    navigate(redirectTo || '/delivery', { replace: true })
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-surface-bg to-primary-light px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-primary-dark px-4">
       <div className="w-full max-w-md bg-white rounded-[var(--radius-xl)] shadow-[var(--shadow-modal)] p-8">
         <div className="text-center mb-6">
-          <h1 className="font-display text-primary text-4xl tracking-wider">FoodHub</h1>
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-light text-primary">
+            <Motorcycle className="h-7 w-7" weight="fill" />
+          </span>
+          <h1 className="font-display text-primary text-3xl tracking-wide mt-3">FoodHub Courier</h1>
         </div>
-        <h2 className="font-display text-3xl text-center mb-2">Welcome Back</h2>
-        <p className="text-muted-foreground text-center mb-8">Sign in to your FoodHub account</p>
+        <h2 className="font-display text-2xl text-center mb-2">Delivery Partner Sign In</h2>
+        <p className="text-muted-foreground text-center mb-8">Log in to manage and deliver your orders</p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {serverError && (
@@ -75,20 +82,17 @@ function LoginPage() {
           />
 
           <Button type="submit" variant="primary" size="lg" loading={loading} className="w-full">
-            Sign In
+            Sign In as Courier
           </Button>
         </form>
 
         <div className="mt-6 text-center space-y-2">
           <p className="text-sm text-muted-foreground">
-            Don&apos;t have an account?{' '}
-            <Link to="/register" className="text-primary font-semibold hover:underline">Sign Up</Link>
+            Not a delivery partner yet?{' '}
+            <Link to="/courier/register" className="text-primary font-semibold hover:underline">Sign Up</Link>
           </p>
-          <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-primary block">
-            Forgot Password?
-          </Link>
-          <Link to="/courier/login" className="text-sm text-muted-foreground hover:text-primary block">
-            Are you a delivery partner? <span className="text-primary font-semibold">Courier Sign In</span>
+          <Link to="/login" className="text-sm text-muted-foreground hover:text-primary block">
+            Customer sign in
           </Link>
         </div>
       </div>
@@ -96,4 +100,4 @@ function LoginPage() {
   )
 }
 
-export default LoginPage
+export default CourierLoginPage

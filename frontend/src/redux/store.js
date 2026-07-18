@@ -8,6 +8,8 @@ import notificationReducer from './notificationSlice'
 import reviewReducer from './reviewSlice'
 import reservationReducer from './reservationSlice'
 import paymentReducer from './paymentSlice'
+import deliveryReducer from './deliverySlice'
+import eventReducer from './eventSlice'
 
 export const store = configureStore({
   reducer: {
@@ -20,5 +22,7 @@ export const store = configureStore({
     review: reviewReducer,
     reservation: reservationReducer,
     payment: paymentReducer,
+    delivery: deliveryReducer,
+    event: eventReducer,
   },
 })

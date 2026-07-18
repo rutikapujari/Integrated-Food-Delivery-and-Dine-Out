@@ -11,6 +11,8 @@ const {
   updateOrderStatus,
   cancelOrder,
   updateOrderPayment,
+  getAvailableOrders,
+  assignCourier,
 } = require("../controllers/orderController");
 
 // ===============================
@@ -26,6 +28,12 @@ router.get("/", auth, getMyOrders);
 
 // Get Single Order
 router.get("/:id", auth, getOrderById);
+
+// Available Orders for Couriers
+router.get("/available", auth, authorize("courier"), getAvailableOrders);
+
+// Assign Courier to Order (claim)
+router.put("/:id/assign", auth, authorize("courier"), assignCourier);
 
 // Update Order Status
 router.put("/:id/status", auth, authorize("restaurant", "courier", "admin"), updateOrderStatus);

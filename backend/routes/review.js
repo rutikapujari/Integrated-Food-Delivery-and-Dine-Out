@@ -9,6 +9,7 @@ const {
   getReviews,
   getReviewById,
   getRestaurantReviews,
+  getMyReviews,
   updateReview,
   deleteReview,
 } = require("../controllers/review_controller");
@@ -25,6 +26,9 @@ router.get("/", getReviews);
 
 // Get Reviews of a Restaurant
 router.get("/restaurant/:restaurantId", getRestaurantReviews);
+
+// Get Current User's Reviews
+router.get("/my", auth, getMyReviews);
 
 // Get Review By ID
 router.get("/:id", getReviewById);

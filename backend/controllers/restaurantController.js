@@ -583,12 +583,29 @@ const deleteRestaurant = async (req, res) => {
   }
 };
 
+// ======================================
+// Get Current Partner's Restaurant(s)
+// ======================================
+const getMyRestaurant = async (req, res) => {
+  try {
+    const restaurants = await Restaurant.find({ ownerId: req.user.id }).sort({ createdAt: -1 });
+    res.status(200).json({
+      success: true,
+      count: restaurants.length,
+      restaurants,
+    });
+  } catch (error) {
+    sendControllerError(res, error);
+  }
+};
+
 module.exports = {
   createRestaurant,
   getRestaurants,
   getNearbyRestaurants,
   getRestaurantById,
   getRestaurantAnalytics,
+  getMyRestaurant,
   updateRestaurant,
   deleteRestaurant,
 };

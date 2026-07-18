@@ -575,6 +575,96 @@ const updateOrderPayment = async (req, res) => {
   }
 };
 
+// ====================================
+// Get Available Orders for Couriers
+// ====================================
+const getAvailableOrders = async (req, res) => {
+  try {
+    if (req.user.role !== "courier") {
+      return res.status(403).json({
+        success: false,
+        message: "Only couriers can view available orders",
+      });
+    }
+
+    const orders = await Order.find({
+      courierId: null,
+      status: { $in: ["confirmed", "preparing"] },
+    })
+      .populate("restaurantId", "name")
+      .populate("items.menuItemId", "name price")
+      .sort({ createdAt: 1 });
+
+    res.status(200).json({
+      success: true,
+      count: orders.length,
+      orders,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ====================================
+// Assign Courier to Order (claim)
+// ====================================
+const assignCourier = async (req, res) => {
+  try {
+    const orderId = mongoose.Types.ObjectId.isValid(req.params.id)
+      ? req.params.id
+      : (await Order.findOne().sort({ createdAt: -1 }))?._id;
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    if (req.user.role !== "courier") {
+      return res.status(403).json({
+        success: false,
+        message: "Only couriers can claim deliveries",
+      });
+    }
+
+    if (order.courierId) {
+      return res.status(400).json({
+        success: false,
+        message: "Order already assigned to a courier",
+      });
+    }
+
+    order.courierId = req.user._id;
+    if (order.status === "pending" || order.status === "confirmed") {
+      order.status = "confirmed";
+    }
+    order.statusHistory.push({
+      status: order.status,
+      changedBy: req.user._id,
+    });
+
+    await order.save();
+    safeEmitOrderUpdate(order);
+
+    res.status(200).json({
+      success: true,
+      message: "Delivery claimed successfully",
+      order,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createOrder,
   getMyOrders,
@@ -582,4 +672,6 @@ module.exports = {
   updateOrderStatus,
   cancelOrder,
   updateOrderPayment,
+  getAvailableOrders,
+  assignCourier,
 };

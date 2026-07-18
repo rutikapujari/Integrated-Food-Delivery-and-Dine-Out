@@ -7,7 +7,7 @@ import NotificationBell from '../notification/NotificationBell'
 import NotificationDropdown from '../notification/NotificationDropdown'
 import {
   ShoppingCart, MagnifyingGlass, User, House,
-  Storefront, ForkKnife, ClipboardText, SignOut, List, Receipt,
+  Storefront, ForkKnife, ClipboardText, SignOut,   List, Receipt, Truck, Ticket,
 } from '../../utils/icons'
 
 function Navbar({ onMenuOpen }) {
@@ -45,6 +45,8 @@ function Navbar({ onMenuOpen }) {
             { to: '/', label: 'Home', icon: House },
             { to: '/restaurants', label: 'Restaurants', icon: Storefront },
             { to: '/menu', label: 'Menu', icon: ForkKnife },
+            { to: '/delivery', label: 'Deliver', icon: Truck },
+            { to: '/events', label: 'Events', icon: Ticket },
           ].map((link) => (
             <Link
               key={link.to}
@@ -130,6 +132,16 @@ function Navbar({ onMenuOpen }) {
                       <Link to="/orders" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-surface-muted" onClick={() => setShowUserMenu(false)}>
                         <ClipboardText className="w-4 h-4" /> Orders
                       </Link>
+                      {user?.role === 'courier' && (
+                        <Link to="/delivery" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-surface-muted" onClick={() => setShowUserMenu(false)}>
+                          <Truck className="w-4 h-4" /> Delivery
+                        </Link>
+                      )}
+                      {(user?.role === 'restaurant' || user?.role === 'admin') && (
+                        <Link to="/partner" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-surface-muted" onClick={() => setShowUserMenu(false)}>
+                          <Storefront className="w-4 h-4" /> Partner
+                        </Link>
+                      )}
                       <Link to="/payments" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-surface-muted" onClick={() => setShowUserMenu(false)}>
                         <Receipt className="w-4 h-4" /> Payments
                       </Link>

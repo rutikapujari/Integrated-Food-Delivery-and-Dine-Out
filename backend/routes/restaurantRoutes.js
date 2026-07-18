@@ -7,6 +7,7 @@ const {
   getNearbyRestaurants,
   getRestaurantById,
   getRestaurantAnalytics,
+  getMyRestaurant,
   updateRestaurant,
   deleteRestaurant,
 } = require("../controllers/restaurantController");
@@ -17,6 +18,7 @@ const authorize = require("../middleware/role");
 // Public Routes
 router.get("/", getRestaurants);
 router.get("/nearby", getNearbyRestaurants);
+router.get("/mine", auth, authorize("restaurant", "admin"), getMyRestaurant);
 router.get("/:id/analytics", auth, authorize("restaurant", "admin"), getRestaurantAnalytics);
 router.get("/:id", getRestaurantById);
 

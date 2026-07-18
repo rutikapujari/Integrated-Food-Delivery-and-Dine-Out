@@ -51,6 +51,7 @@ app.use("/api/support", require("./routes/supportRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/test", require("./routes/test.routes"));
 app.use("/api/ai", require("./routes/aiRoutes"));
+app.use("/api/events", require("./routes/eventRoutes"));
 // Home Route
 app.get("/", (req, res) => {
   res.send("Food Delivery API is Running...");

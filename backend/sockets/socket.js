@@ -75,18 +75,38 @@ const initializeSocket = (server) => {
     joinUserRooms(socket);
     console.log("Socket connected:", socket.id);
 
-    socket.on("joinOrder", (orderId) => {
+    const joinOrderRoom = (orderId) => {
       if (!orderId) return;
       socket.join(`order:${orderId}`);
       socket.join(orderId);
       console.log(`User joined order room: ${orderId}`);
-    });
+    };
 
-    socket.on("leaveOrder", (orderId) => {
+    const leaveOrderRoom = (orderId) => {
       if (!orderId) return;
       socket.leave(`order:${orderId}`);
       socket.leave(orderId);
       console.log(`User left order room: ${orderId}`);
+    };
+
+    socket.on("joinOrder", (orderId) => joinOrderRoom(orderId));
+    socket.on("leaveOrder", (orderId) => leaveOrderRoom(orderId));
+
+    // Frontend compatibility: accepts { room: "order:<id>" } or a raw orderId
+    socket.on("join", (payload) => {
+      const orderId =
+        payload?.room?.replace(/^order:/, "") ||
+        payload?.orderId ||
+        payload?.room;
+      joinOrderRoom(orderId);
+    });
+
+    socket.on("leave", (payload) => {
+      const orderId =
+        payload?.room?.replace(/^order:/, "") ||
+        payload?.orderId ||
+        payload?.room;
+      leaveOrderRoom(orderId);
     });
 
     socket.on("joinRestaurant", (restaurantId) => {
@@ -128,12 +148,12 @@ const emitOrderUpdate = (order) => {
     order,
   };
 
-  socket.to(`order:${order._id}`).to(order._id.toString()).emit("order:update", orderPayload);
-  socket.to(`user:${order.userId}`).emit("order:update", orderPayload);
-  socket.to(`restaurant:${order.restaurantId}`).emit("order:update", orderPayload);
+  socket.to(`order:${order._id}`).to(order._id.toString()).emit("orderUpdate", orderPayload);
+  socket.to(`user:${order.userId}`).emit("orderUpdate", orderPayload);
+  socket.to(`restaurant:${order.restaurantId}`).emit("orderUpdate", orderPayload);
 
   if (order.courierId) {
-    socket.to(`user:${order.courierId}`).emit("order:update", orderPayload);
+    socket.to(`user:${order.courierId}`).emit("orderUpdate", orderPayload);
   }
 };
 
@@ -145,9 +165,16 @@ const emitCartUpdate = (userId, cart) => {
   });
 };
 
+const emitNotification = (notification) => {
+  if (!notification?.userId) return;
+
+  getIO().to(`user:${notification.userId}`).emit("notification", notification);
+};
+
 module.exports = {
   initializeSocket,
   getIO,
   emitOrderUpdate,
   emitCartUpdate,
+  emitNotification,
 };

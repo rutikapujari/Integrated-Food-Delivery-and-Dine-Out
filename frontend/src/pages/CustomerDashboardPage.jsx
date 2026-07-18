@@ -7,9 +7,11 @@ import { useAuth } from '../hooks/useAuth'
 import { fetchOrders } from '../redux/orderSlice'
 import { fetchRestaurants } from '../redux/restaurantSlice'
 import { fetchMenuItems } from '../redux/menuSlice'
+import { fetchCurrentUser } from '../redux/authSlice'
 import { formatCurrency } from '../utils/formatCurrency'
 import { ORDER_STATUS_LABELS } from '../utils/constants'
 import RestaurantCard from '../components/restaurant/RestaurantCard'
+import LoyaltyCard from '../components/profile/LoyaltyCard'
 import MenuCard from '../components/menu/MenuCard'
 import { Calendar, CaretRight, ClipboardText, Clock, MapPin, Motorcycle, ShoppingCart, Storefront } from '../utils/icons'
 
@@ -27,6 +29,7 @@ function CustomerDashboardPage() {
     dispatch(fetchOrders())
     dispatch(fetchRestaurants({ page: 1, limit: 4 }))
     dispatch(fetchMenuItems())
+    dispatch(fetchCurrentUser())
   }, [dispatch])
 
   const activeOrder = useMemo(() => orders.find((order) => activeStatuses.has(order.status)), [orders])
@@ -68,6 +71,8 @@ function CustomerDashboardPage() {
             <div className="flex items-start justify-between"><ShoppingCart className="h-6 w-6 text-primary" weight="duotone" /><CaretRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" weight="bold" /></div>
             <p className="mt-6 text-sm font-semibold text-muted-foreground">Your cart</p><p className="mt-1 text-2xl font-bold text-foreground">{cartItems.length} item{cartItems.length === 1 ? '' : 's'}</p><p className="mt-1 text-sm text-muted-foreground">{cartItems.length ? formatCurrency(cartTotal) : 'Add something tasty'}</p>
           </Link>
+
+          <LoyaltyCard points={user?.loyaltyPoints || 0} />
         </section>
 
         <section className="mt-8">

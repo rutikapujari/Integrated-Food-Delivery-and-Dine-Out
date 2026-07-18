@@ -37,6 +37,18 @@ export const cancelOrder = createAsyncThunk('order/cancelOrder', async (id, { re
   }
 })
 
+export const updateOrderStatusThunk = createAsyncThunk(
+  'order/updateOrderStatusThunk',
+  async ({ orderId, status }, { rejectWithValue }) => {
+    try {
+      const { data } = await orderService.updateStatus(orderId, status)
+      return data
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to update status')
+    }
+  }
+)
+
 const orderSlice = createSlice({
   name: 'order',
   initialState: {
@@ -74,6 +86,12 @@ const orderSlice = createSlice({
         const order = state.list.find((o) => o._id === action.payload.order?._id)
         if (order) order.status = 'cancelled'
         if (state.activeOrder?._id === action.payload.order?._id) state.activeOrder.status = 'cancelled'
+      })
+      .addCase(updateOrderStatusThunk.fulfilled, (state, action) => {
+        const updated = action.payload.order
+        const order = state.list.find((o) => o._id === updated._id)
+        if (order) order.status = updated.status
+        if (state.activeOrder?._id === updated._id) state.activeOrder.status = updated.status
       })
   },
 })
