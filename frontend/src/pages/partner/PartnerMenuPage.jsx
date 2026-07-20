@@ -5,6 +5,7 @@ import { pageTransition } from '../../utils/motion'
 import { fetchMenuItems } from '../../redux/menuSlice'
 import { restaurantService } from '../../services/restaurantService'
 import { menuService } from '../../services/menuService'
+import { uploadService } from '../../services/uploadService'
 import { notify } from '../../utils/toast'
 import Loader from '../../components/common/Loader'
 import Button from '../../components/common/Button'
@@ -17,6 +18,7 @@ function PartnerMenuPage() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({ name: '', description: '', category: '', price: '', image: '' })
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     dispatch(fetchMenuItems())
@@ -36,6 +38,25 @@ function PartnerMenuPage() {
       price: String(item.price), image: item.image || '',
     })
     setShowForm(true)
+  }
+
+  const handleImageFile = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const url = await uploadService.uploadImage(file, 'menu')
+      if (url) {
+        setForm((f) => ({ ...f, image: url }))
+        notify.success('Image uploaded')
+      } else {
+        notify.error('Upload failed')
+      }
+    } catch {
+      notify.error('Failed to upload image')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -147,7 +168,14 @@ function PartnerMenuPage() {
                 <input className="w-full h-11 rounded-lg border border-border px-3 text-sm focus:border-primary focus:outline-none" placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
                 <input className="w-full h-11 rounded-lg border border-border px-3 text-sm focus:border-primary focus:outline-none" placeholder="Category (e.g. Starter)" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required />
                 <input type="number" min="0" className="w-full h-11 rounded-lg border border-border px-3 text-sm focus:border-primary focus:outline-none" placeholder="Price (₹)" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
-                <input className="w-full h-11 rounded-lg border border-border px-3 text-sm focus:border-primary focus:outline-none" placeholder="Image URL (optional)" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} />
+                <div className="flex flex-col gap-2">
+                  {form.image ? (
+                    <img src={form.image} alt="" className="h-24 w-24 rounded-xl object-cover" />
+                  ) : null}
+                  <input type="file" accept="image/*" onChange={handleImageFile} className="text-sm" disabled={uploading} />
+                  {uploading && <span className="text-xs text-muted-foreground">Uploading…</span>}
+                  <input className="w-full h-11 rounded-lg border border-border px-3 text-sm focus:border-primary focus:outline-none" placeholder="Or paste Image URL (optional)" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} />
+                </div>
                 <textarea className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="Description" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
               </div>
               <div className="mt-5 flex gap-3">
