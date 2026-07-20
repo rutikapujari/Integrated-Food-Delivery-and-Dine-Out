@@ -3,6 +3,18 @@ const User = require("../models/User");
 const Restaurant = require("../models/Restaurant");
 const { sendNotificationEmail } = require("../services/notificationService");
 
+const isRestaurantOwner = async (userId, restaurantId) => {
+  if (!userId || !restaurantId) return false;
+  const restaurant = await Restaurant.findOne({ _id: restaurantId, ownerId: userId });
+  return Boolean(restaurant);
+};
+
+const canAccessReservation = async (user, reservation) => {
+  if (user.role === "admin") return true;
+  if (reservation.userId.toString() === user._id.toString()) return true;
+  return isRestaurantOwner(user._id, reservation.restaurantId);
+};
+
 const sendReservationEmail = async (reservation, subject, message) => {
   const user = await User.findById(reservation.userId).select("name email");
   const restaurant = await Restaurant.findById(reservation.restaurantId).select("name");
@@ -147,6 +159,13 @@ const getReservationById = async (req, res) => {
       });
     }
 
+    if (!(await canAccessReservation(req.user, reservation))) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to view this reservation",
+      });
+    }
+
     res.status(200).json({
       success: true,
       reservation,
@@ -164,6 +183,20 @@ const getReservationById = async (req, res) => {
 // ======================================
 const getRestaurantReservations = async (req, res) => {
   try {
+    if (req.user.role !== "admin" && req.user.role !== "restaurant") {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to view restaurant reservations",
+      });
+    }
+
+    if (req.user.role === "restaurant" && !(await isRestaurantOwner(req.user._id, req.params.restaurantId))) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to view reservations for this restaurant",
+      });
+    }
+
     const reservations = await Reservation.find({
       restaurantId: req.params.restaurantId,
     })
@@ -194,6 +227,13 @@ const updateReservation = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Reservation not found",
+      });
+    }
+
+    if (!(await canAccessReservation(req.user, reservation))) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this reservation",
       });
     }
 
@@ -250,6 +290,21 @@ const updateReservationStatus = async (req, res) => {
       });
     }
 
+    if (!(await canAccessReservation(req.user, reservation))) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this reservation",
+      });
+    }
+
+    const allowedStatuses = ["Pending", "Confirmed", "Cancelled", "Completed"];
+    if (!allowedStatuses.includes(req.body.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Allowed: ${allowedStatuses.join(", ")}`,
+      });
+    }
+
     reservation.status = req.body.status;
 
     await reservation.save();
@@ -283,6 +338,13 @@ const cancelReservation = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Reservation not found",
+      });
+    }
+
+    if (!(await canAccessReservation(req.user, reservation))) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to cancel this reservation",
       });
     }
 
