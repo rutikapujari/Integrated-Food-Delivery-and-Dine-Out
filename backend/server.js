@@ -47,7 +47,6 @@ app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/restaurants", require("./routes/restaurantRoutes"));
 app.use("/api/menu", require("./routes/menuRoutes"));
 app.use("/api/cart", require("./routes/cart"));
-app.use("/api/carts", require("./routes/cart"));
 app.use("/api/orders", require("./routes/orderRoutes"));
 app.use("/api/reservations", require("./routes/reservation"));
 app.use("/api/reviews", require("./routes/review"));
