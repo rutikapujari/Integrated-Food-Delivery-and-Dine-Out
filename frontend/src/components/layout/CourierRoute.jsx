@@ -6,7 +6,7 @@ import Loader from '../common/Loader'
 import { Truck } from '../../utils/icons'
 
 function CourierRoute() {
-  const { user, isAuthenticated, loading } = useSelector((state) => state.auth)
+  const { user, isAuthenticated, loading } = useSelector((state) => state.courierAuth)
 
   useEffect(() => {
     if (!loading && isAuthenticated && user?.role !== 'courier') {
