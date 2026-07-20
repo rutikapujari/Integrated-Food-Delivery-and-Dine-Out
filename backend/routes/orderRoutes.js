@@ -26,11 +26,11 @@ router.post("/create", auth, authorize("customer", "admin"), createOrder);
 // Get Logged-in User Orders
 router.get("/", auth, getMyOrders);
 
+// Available Orders for Couriers (must be before /:id)
+router.get("/available", auth, authorize("courier"), getAvailableOrders);
+
 // Get Single Order
 router.get("/:id", auth, getOrderById);
-
-// Available Orders for Couriers
-router.get("/available", auth, authorize("courier"), getAvailableOrders);
 
 // Assign Courier to Order (claim)
 router.put("/:id/assign", auth, authorize("courier"), assignCourier);

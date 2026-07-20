@@ -38,12 +38,11 @@ const sendOrderEmail = async (order, subject, message) => {
 };
 
 const findOrderByParamId = async (id) => {
-  if (id && mongoose.Types.ObjectId.isValid(id)) {
-    const order = await Order.findById(id);
-    if (order) return order;
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    return null;
   }
 
-  return Order.findOne().sort({ createdAt: -1 });
+  return Order.findById(id);
 };
 
 const populateOrderDetails = (query) =>
@@ -334,14 +333,14 @@ const getMyOrders = async (req, res) => {
 // ====================================
 const getOrderById = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order ID",
+      });
+    }
 
-    const orderId = mongoose.Types.ObjectId.isValid(req.params.id)
-      ? req.params.id
-      : (await Order.findOne().sort({ createdAt: -1 }))?._id;
-
-    const order = orderId
-      ? await populateOrderDetails(Order.findById(orderId))
-      : null;
+    const order = await populateOrderDetails(Order.findById(req.params.id));
 
     if (!order) {
       return res.status(404).json({
@@ -498,11 +497,14 @@ const cancelOrder = async (req, res) => {
 // ====================================
 const updateOrderPayment = async (req, res) => {
   try {
-    const orderId = mongoose.Types.ObjectId.isValid(req.params.id)
-      ? req.params.id
-      : (await Order.findOne().sort({ createdAt: -1 }))?._id;
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order ID",
+      });
+    }
 
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(req.params.id);
 
     if (!order) {
       return res.status(404).json({
@@ -613,11 +615,14 @@ const getAvailableOrders = async (req, res) => {
 // ====================================
 const assignCourier = async (req, res) => {
   try {
-    const orderId = mongoose.Types.ObjectId.isValid(req.params.id)
-      ? req.params.id
-      : (await Order.findOne().sort({ createdAt: -1 }))?._id;
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order ID",
+      });
+    }
 
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(req.params.id);
 
     if (!order) {
       return res.status(404).json({
