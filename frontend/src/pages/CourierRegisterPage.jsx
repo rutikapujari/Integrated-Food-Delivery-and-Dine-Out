@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useSelector, useDispatch } from 'react-redux'
-import { registerUser, verifyOTP } from '../redux/authSlice'
+import { courierRegister, courierVerifyOTP } from '../redux/courierAuthSlice'
 import { notify } from '../utils/toast'
 import Button from '../components/common/Button'
 import Input from '../components/common/Input'
@@ -34,7 +34,7 @@ const otpSchema = z.object({
 function CourierRegisterPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const { loading } = useSelector((state) => state.auth)
+  const { loading } = useSelector((state) => state.courierAuth)
   const [step, setStep] = useState(1)
   const [registeredEmail, setRegisteredEmail] = useState('')
   const [cooldown, setCooldown] = useState(0)
@@ -64,8 +64,8 @@ function CourierRegisterPage() {
   const onRegister = async (data) => {
     setServerError(null)
     const { confirmPassword, ...userData } = data
-    const result = await dispatch(registerUser({ ...userData, role: 'courier' }))
-    if (registerUser.fulfilled.match(result)) {
+    const result = await dispatch(courierRegister({ ...userData, role: 'courier' }))
+    if (courierRegister.fulfilled.match(result)) {
       setRegisteredEmail(data.email)
       setStep(2)
       startCooldown()
@@ -77,8 +77,8 @@ function CourierRegisterPage() {
 
   const onVerify = async (data) => {
     setServerError(null)
-    const result = await dispatch(verifyOTP({ email: registeredEmail, otp: data.otp }))
-    if (verifyOTP.fulfilled.match(result)) {
+    const result = await dispatch(courierVerifyOTP({ email: registeredEmail, otp: data.otp }))
+    if (courierVerifyOTP.fulfilled.match(result)) {
       notify.success('Partner account verified! Sign in to start delivering.')
       navigate('/courier/login', { replace: true })
     } else {
