@@ -197,7 +197,7 @@ const getOrderSource = async (userId, body) => {
 // ====================================
 const createOrder = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     const { deliveryAddress, deliveryLocation, paymentMethod } = req.body;
     const orderSource = await getOrderSource(userId, req.body);
@@ -288,7 +288,7 @@ const createOrder = async (req, res) => {
 const getMyOrders = async (req, res) => {
   try {
 
-    let filter = { userId: req.user.id };
+    let filter = { userId: req.user._id };
 
     if (req.user.role === "admin") {
       filter = {};

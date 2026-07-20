@@ -67,7 +67,7 @@ const validateReservationPayload = ({
 // ======================================
 const createReservation = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     const {
       restaurantId,
@@ -125,7 +125,7 @@ const createReservation = async (req, res) => {
 const getMyReservations = async (req, res) => {
   try {
     const reservations = await Reservation.find({
-      userId: req.user.id,
+      userId: req.user._id,
     })
       .populate("restaurantId", "name address")
       .sort({ createdAt: -1 });

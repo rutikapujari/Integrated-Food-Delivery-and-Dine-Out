@@ -602,7 +602,7 @@ const deleteRestaurant = async (req, res) => {
 // ======================================
 const getMyRestaurant = async (req, res) => {
   try {
-    const restaurants = await Restaurant.find({ ownerId: req.user.id }).sort({ createdAt: -1 });
+    const restaurants = await Restaurant.find({ ownerId: req.user._id }).sort({ createdAt: -1 });
     res.status(200).json({
       success: true,
       count: restaurants.length,

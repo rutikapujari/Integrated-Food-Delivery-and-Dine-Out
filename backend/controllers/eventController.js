@@ -144,7 +144,7 @@ const createEvent = async (req, res) => {
       capacity: capacity || 0,
       tags: tags || [],
       status: "published",
-      createdBy: req.user.id,
+      createdBy: req.user._id,
     });
 
     res.status(201).json({ success: true, message: "Event created", event });
@@ -211,13 +211,13 @@ const rsvpEvent = async (req, res) => {
       return res.status(400).json({ success: false, message: "Event is fully booked" });
     }
 
-    if (event.attendees && event.attendees.includes(req.user.id)) {
+    if (event.attendees && event.attendees.includes(req.user._id)) {
       return res.status(400).json({ success: false, message: "You have already RSVP'd to this event" });
     }
 
     event.bookedCount += 1;
     if (!event.attendees) event.attendees = [];
-    event.attendees.push(req.user.id);
+      event.attendees.push(req.user._id);
     await event.save();
 
     res.status(200).json({ success: true, message: "RSVP confirmed", event });

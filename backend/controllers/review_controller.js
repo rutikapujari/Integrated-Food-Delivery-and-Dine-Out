@@ -95,7 +95,7 @@ const updateRestaurantRating = async (restaurantId) => {
 // ======================================
 const createReview = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     const {
       restaurantId,
@@ -243,7 +243,7 @@ const getMyReviews = async (req, res) => {
 
   try {
 
-    const reviews = await Review.find({ userId: req.user.id })
+    const reviews = await Review.find({ userId: req.user._id })
       .populate("restaurantId", "name")
       .sort({ createdAt: -1 });
 
