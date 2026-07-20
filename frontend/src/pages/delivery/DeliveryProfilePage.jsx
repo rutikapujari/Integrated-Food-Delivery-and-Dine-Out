@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { formatCurrency } from '../../utils/formatCurrency'
 import { fetchMyDeliveries } from '../../redux/deliverySlice'
 import { logoutUser } from '../../redux/authSlice'
+import { courierLogout } from '../../redux/courierAuthSlice'
 import { notify } from '../../utils/toast'
 import {
   User, Motorcycle, Phone, Envelope, CheckCircle, Truck,
@@ -28,7 +29,7 @@ function DeliveryProfilePage() {
     .reduce((sum, o) => sum + Math.round((Number(o.totalAmount) || 0) * 0.1), 0)
 
   const handleLogout = async () => {
-    await dispatch(logoutUser())
+    await dispatch(courierLogout())
     notify.success('Signed out')
     navigate('/courier/login', { replace: true })
   }
