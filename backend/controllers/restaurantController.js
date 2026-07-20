@@ -543,7 +543,7 @@ const updateRestaurant = async (req, res) => {
       req.params.id,
       buildRestaurantUpdatePayload(req.body),
       {
-        new: true,
+        returnDocument: 'after',
         runValidators: true,
       }
     );
