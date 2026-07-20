@@ -2,6 +2,9 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const helmet = require("helmet");
+const compression = require("compression");
+const morgan = require("morgan");
 const path = require("path");
 const http = require("http");
 const { initializeSocket } = require("./sockets/socket");
@@ -24,6 +27,9 @@ app.use(
     credentials: true,
   })
 );
+app.use(helmet());
+app.use(compression());
+app.use(morgan("dev"));
 app.use(cookieParser());
 
 app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
