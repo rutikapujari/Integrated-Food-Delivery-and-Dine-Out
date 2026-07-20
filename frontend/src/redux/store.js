@@ -9,6 +9,7 @@ import reviewReducer from './reviewSlice'
 import reservationReducer from './reservationSlice'
 import paymentReducer from './paymentSlice'
 import deliveryReducer from './deliverySlice'
+import courierAuthReducer from './courierAuthSlice'
 import eventReducer from './eventSlice'
 
 export const store = configureStore({
@@ -23,6 +24,7 @@ export const store = configureStore({
     reservation: reservationReducer,
     payment: paymentReducer,
     delivery: deliveryReducer,
+    courierAuth: courierAuthReducer,
     event: eventReducer,
   },
 })
