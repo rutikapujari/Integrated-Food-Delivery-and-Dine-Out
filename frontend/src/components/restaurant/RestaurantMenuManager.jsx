@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { menuService } from '../../services/menuService'
 import { notify } from '../../utils/toast'
+import { formatCurrency } from '../../utils/formatCurrency'
 import Button from '../common/Button'
 import Modal from '../common/Modal'
 import { Plus, Trash, Pencil, ForkKnife, X } from '../../utils/icons'
@@ -189,7 +190,7 @@ function RestaurantMenuManager({ restaurantId, items, onRefresh }) {
               )}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm truncate">{item.name}</p>
-                <p className="text-xs text-muted-foreground">{item.category} &bull; ${item.price}</p>
+                <p className="text-xs text-muted-foreground">{item.category} &bull; {formatCurrency(item.price)}</p>
               </div>
               <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold ${item.isAvailable !== false ? 'text-success bg-success-light' : 'text-destructive bg-destructive/10'}`}>
                 {item.isAvailable !== false ? 'Active' : 'Off'}
