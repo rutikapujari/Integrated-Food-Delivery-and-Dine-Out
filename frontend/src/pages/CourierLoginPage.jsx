@@ -3,7 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useAuth } from '../hooks/useAuth'
+import { useDispatch, useSelector } from 'react-redux'
+import { courierLogin } from '../redux/courierAuthSlice'
 import Button from '../components/common/Button'
 import Input from '../components/common/Input'
 import { Envelope, Lock, Motorcycle } from '../utils/icons'
@@ -14,7 +15,8 @@ const loginSchema = z.object({
 })
 
 function CourierLoginPage() {
-  const { login, loading, error } = useAuth()
+  const dispatch = useDispatch()
+  const { loading } = useSelector((state) => state.courierAuth)
   const [serverError, setServerError] = useState(null)
   const location = useLocation()
   const navigate = useNavigate()
@@ -27,13 +29,13 @@ function CourierLoginPage() {
 
   const onSubmit = async (data) => {
     setServerError(null)
-    const result = await login(data.email, data.password)
-    if (!result) {
-      setServerError(error || 'Login failed. Please try again.')
+    const result = await dispatch(courierLogin(data))
+    if (!courierLogin.fulfilled.match(result)) {
+      setServerError(result.payload || 'Login failed. Please try again.')
       return
     }
 
-    const isCourier = result.user?.role === 'courier'
+    const isCourier = result.payload.user?.role === 'courier'
     if (!isCourier) {
       setServerError('This account is not registered as a delivery partner.')
       return
