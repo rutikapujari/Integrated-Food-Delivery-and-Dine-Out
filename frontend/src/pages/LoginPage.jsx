@@ -49,7 +49,7 @@ function LoginPage() {
         <h2 className="font-display text-3xl text-center mb-2">Welcome Back</h2>
         <p className="text-muted-foreground text-center mb-8">Sign in to your FoodHub account</p>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {serverError && (
             <div className="bg-destructive/10 text-destructive text-sm rounded-[var(--radius-sm)] p-3">{serverError}</div>
           )}
