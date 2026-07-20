@@ -19,7 +19,7 @@ const NAV = [
 function DeliveryLayout() {
   const dispatch = useDispatch()
   const location = useLocation()
-  const { user } = useSelector((state) => state.auth)
+  const { user } = useSelector((state) => state.courierAuth)
   const { myDeliveries } = useSelector((state) => state.delivery)
   const [isOnline, setIsOnline] = useState(true)
   const activeCount = myDeliveries.filter((o) => !['delivered', 'cancelled'].includes(o.status)).length
