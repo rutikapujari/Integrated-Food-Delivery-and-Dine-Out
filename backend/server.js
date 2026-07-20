@@ -49,6 +49,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/support", require("./routes/supportRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
+app.use("/api/upload", require("./routes/uploadRoutes"));
 app.use("/api/test", require("./routes/test.routes"));
 app.use("/api/ai", require("./routes/aiRoutes"));
 app.use("/api/events", require("./routes/eventRoutes"));
