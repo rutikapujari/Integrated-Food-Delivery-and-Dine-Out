@@ -2,6 +2,8 @@ const MenuItem = require("../models/MenuItem");
 const Restaurant = require("../models/Restaurant");
 const mongoose = require("mongoose");
 
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const isAdminUser = (user) => {
   if (!user) return false;
   const role = user.role || user.userRole || user.role;
@@ -114,11 +116,11 @@ const getMenuItems = async (req, res) => {
     }
 
     if (category) {
-      filter.category = new RegExp(`^${category}$`, "i");
+      filter.category = new RegExp(`^${escapeRegex(category)}$`, "i");
     }
 
     if (search) {
-      const searchExpression = new RegExp(search, "i");
+      const searchExpression = new RegExp(escapeRegex(search), "i");
       filter.$or = [
         { name: searchExpression },
         { description: searchExpression },

@@ -211,7 +211,8 @@ const getRestaurants = async (req, res) => {
     const filter = { status: "approved" };
 
     if (search) {
-      const searchExpression = new RegExp(search, "i");
+      const safeSearch = escapeRegex(search);
+      const searchExpression = new RegExp(safeSearch, "i");
       filter.$or = [
         { name: searchExpression },
         { cuisine: searchExpression },
@@ -275,7 +276,7 @@ const getNearbyRestaurants = async (req, res) => {
     };
 
     if (cuisine) {
-      query.cuisine = new RegExp(cuisine, "i");
+      query.cuisine = new RegExp(escapeRegex(cuisine), "i");
     }
 
     const restaurants = await Restaurant.aggregate([

@@ -2,6 +2,8 @@ const Event = require("../models/Event");
 const Restaurant = require("../models/Restaurant");
 const mongoose = require("mongoose");
 
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 // ======================================
 // Get Published Events (with optional filters)
 // ======================================
@@ -11,9 +13,10 @@ const getEvents = async (req, res) => {
     const filter = { status: "published" };
 
     if (search) {
+      const safeSearch = escapeRegex(search);
       filter.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
+        { title: { $regex: safeSearch, $options: "i" } },
+        { description: { $regex: safeSearch, $options: "i" } },
         { tags: { $in: [search] } },
       ];
     }
