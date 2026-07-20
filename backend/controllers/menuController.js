@@ -2,6 +2,12 @@ const MenuItem = require("../models/MenuItem");
 const Restaurant = require("../models/Restaurant");
 const mongoose = require("mongoose");
 
+const isAdminUser = (user) => {
+  if (!user) return false;
+  const role = user.role || user.userRole || user.role;
+  return role === "admin";
+};
+
 const getRestaurantForMenu = async (restaurantId, restaurantName) => {
   if (restaurantId && mongoose.Types.ObjectId.isValid(restaurantId)) {
     const restaurant = await Restaurant.findById(restaurantId);
@@ -63,7 +69,7 @@ const createMenuItem = async (req, res) => {
     }
 
     if (
-      req.user?.role !== "admin" &&
+      !isAdminUser(req.user) &&
       restaurant.ownerId?.toString() !== req.user?._id?.toString()
     ) {
       return res.status(403).json({
@@ -201,7 +207,7 @@ const updateMenuItem = async (req, res) => {
 
     const restaurant = await Restaurant.findById(menuItem.restaurantId);
     if (
-      req.user?.role !== "admin" &&
+      !isAdminUser(req.user) &&
       restaurant?.ownerId?.toString() !== req.user?._id?.toString()
     ) {
       return res.status(403).json({
@@ -214,7 +220,7 @@ const updateMenuItem = async (req, res) => {
       req.params.id,
       req.body,
       {
-        new: true,
+        returnDocument: 'after',
         runValidators: true,
       }
     );
@@ -248,7 +254,7 @@ const deleteMenuItem = async (req, res) => {
 
     const restaurant = await Restaurant.findById(menuItem.restaurantId);
     if (
-      req.user?.role !== "admin" &&
+      !isAdminUser(req.user) &&
       restaurant?.ownerId?.toString() !== req.user?._id?.toString()
     ) {
       return res.status(403).json({
