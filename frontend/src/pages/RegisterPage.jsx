@@ -56,7 +56,7 @@ function RegisterPage() {
   }
 
   const onRegister = async (data) => {
-    const result = await signup(data)
+    const result = await signup({ ...data, role: 'customer' })
     if (result) {
       setRegisteredEmail(data.email)
       setStep(2)
