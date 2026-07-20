@@ -9,10 +9,16 @@ function ReviewCard({ review, onEdit, onDelete }) {
   const [editing, setEditing] = useState(false)
   const [editComment, setEditComment] = useState(review.comment)
   const [editRating, setEditRating] = useState(review.rating)
+  const [saving, setSaving] = useState(false)
 
-  const handleSave = () => {
-    onEdit(review._id, { comment: editComment, rating: editRating })
-    setEditing(false)
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await onEdit(review._id, { comment: editComment, rating: editRating })
+      setEditing(false)
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (editing) {
@@ -33,7 +39,7 @@ function ReviewCard({ review, onEdit, onDelete }) {
         />
         <div className="flex gap-2 mt-3">
           <Button variant="outline" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
-          <Button size="sm" onClick={handleSave}>Save</Button>
+          <Button size="sm" loading={saving} onClick={handleSave}>Save</Button>
         </div>
       </div>
     )
