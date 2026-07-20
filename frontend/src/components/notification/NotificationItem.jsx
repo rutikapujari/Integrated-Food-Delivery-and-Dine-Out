@@ -25,7 +25,7 @@ function NotificationItem({ notification, onClick }) {
       to={getNotificationLink(notification)}
       onClick={onClick}
       className={`flex gap-3 p-4 hover:bg-surface-muted cursor-pointer transition-colors ${
-        !notification.isRead && !notification.read ? 'bg-primary-light/30' : ''
+        !notification.isRead ? 'bg-primary-light/30' : ''
       }`}
     >
       <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${meta.className}`}>
@@ -37,7 +37,7 @@ function NotificationItem({ notification, onClick }) {
           {timeAgo(notification.createdAt)}
         </p>
       </div>
-      {(!notification.isRead && !notification.read) && (
+      {!notification.isRead && (
         <div className="w-2 h-2 rounded-full bg-primary mt-2 shrink-0" />
       )}
     </Link>
