@@ -3,13 +3,27 @@ const Order = require("../models/Order");
 const Restaurant = require("../models/Restaurant");
 const Payment = require("../models/Payment");
 
+const parsePagination = (query) => {
+  const page = Math.max(1, parseInt(query.page) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(query.limit) || 20));
+  const skip = (page - 1) * limit;
+  return { page, limit, skip };
+};
+
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password -refreshToken").sort({ createdAt: -1 });
+    const { page, limit, skip } = parsePagination(req.query);
+    const [users, total] = await Promise.all([
+      User.find().select("-password -refreshToken").sort({ createdAt: -1 }).skip(skip).limit(limit),
+      User.countDocuments(),
+    ]);
 
     res.status(200).json({
       success: true,
       count: users.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
       users,
     });
   } catch (error) {
@@ -19,14 +33,23 @@ const getUsers = async (req, res) => {
 
 const getOrders = async (req, res) => {
   try {
-    const orders = await Order.find()
-      .populate("userId", "name email")
-      .populate("restaurantId", "name")
-      .sort({ createdAt: -1 });
+    const { page, limit, skip } = parsePagination(req.query);
+    const [orders, total] = await Promise.all([
+      Order.find()
+        .populate("userId", "name email")
+        .populate("restaurantId", "name")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Order.countDocuments(),
+    ]);
 
     res.status(200).json({
       success: true,
       count: orders.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
       orders,
     });
   } catch (error) {
@@ -53,11 +76,18 @@ const getRevenue = async (req, res) => {
 
 const getRestaurants = async (req, res) => {
   try {
-    const restaurants = await Restaurant.find().sort({ createdAt: -1 });
+    const { page, limit, skip } = parsePagination(req.query);
+    const [restaurants, total] = await Promise.all([
+      Restaurant.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Restaurant.countDocuments(),
+    ]);
 
     res.status(200).json({
       success: true,
       count: restaurants.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
       restaurants,
     });
   } catch (error) {
