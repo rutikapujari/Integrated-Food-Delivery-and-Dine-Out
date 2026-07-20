@@ -86,6 +86,8 @@ const server = http.createServer(app);
 
 initializeSocket(server);
 
+const mongoose = require("mongoose");
+
 const startServer = async () => {
   await connectDB();
 
@@ -93,6 +95,19 @@ const startServer = async () => {
     console.log(`Server running on port ${PORT}`);
   });
 };
+
+const gracefulShutdown = async (signal) => {
+  console.log(`${signal} received. Shutting down gracefully...`);
+  server.close(() => {
+    console.log("HTTP server closed.");
+  });
+  await mongoose.connection.close(false);
+  console.log("MongoDB connection closed.");
+  process.exit(0);
+};
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 server.on("error", (error) => {
   if (error.code === "EADDRINUSE") {
