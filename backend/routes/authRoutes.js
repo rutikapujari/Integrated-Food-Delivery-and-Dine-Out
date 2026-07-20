@@ -61,7 +61,10 @@ router.post('/register', async (req, res) => {
       registrationCode
     } = req.body;
 
-    const normalizedRole = typeof role === 'string' ? role.trim().toLowerCase() : role;
+    const normalizedRole =
+      typeof role === 'string' && role.trim()
+        ? role.trim().toLowerCase()
+        : 'customer';
     const providedAdminCode = String(adminRegistrationCode || adminCode || registrationCode || '').trim();
 
     if (normalizedRole === 'admin') {
