@@ -110,7 +110,8 @@ router.post('/register', async (req, res) => {
 
       await existingUser.save();
 
-      const verifyUrl = `http://localhost:3000/api/auth/verify/${emailToken}`;
+      const serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
+      const verifyUrl = `${serverUrl}/api/auth/verify/${emailToken}`;
 
       if (isEmailConfigured()) {
         await sendEmail(
@@ -152,7 +153,8 @@ router.post('/register', async (req, res) => {
       isVerified: isEmailConfigured() ? false : true
     });
 
-    const verifyUrl = `http://localhost:3000/api/auth/verify/${emailToken}`;
+    const serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const verifyUrl = `${serverUrl}/api/auth/verify/${emailToken}`;
 
     if (isEmailConfigured()) {
       await sendEmail(
@@ -439,7 +441,8 @@ router.post('/forgot', async (req, res) => {
 
     await user.save();
 
-    const resetUrl = `http://localhost:3000/api/auth/reset/${token}`;
+    const serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const resetUrl = `${serverUrl}/api/auth/reset/${token}`;
 
     if (isEmailConfigured()) {
       await sendEmail(
