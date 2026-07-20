@@ -218,9 +218,17 @@ const updateMenuItem = async (req, res) => {
       });
     }
 
+    const allowedFields = ["name", "description", "price", "category", "image", "isAvailable", "isVeg"];
+    const updateData = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        updateData[field] = req.body[field];
+      }
+    }
+
     const updatedMenu = await MenuItem.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       {
         returnDocument: 'after',
         runValidators: true,

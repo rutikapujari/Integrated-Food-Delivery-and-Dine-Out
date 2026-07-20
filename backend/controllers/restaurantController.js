@@ -122,12 +122,16 @@ const buildRestaurantPayload = (body, user) => {
   );
 
   return {
-    ...body,
     name,
     email,
     phone,
     cuisine: normalizeCuisine(body.cuisine || body.category || body.foodType),
     address,
+    description: body.description,
+    image: body.image,
+    tags: body.tags,
+    openingHours: body.openingHours,
+    minimumOrderAmount: body.minimumOrderAmount,
     location: {
       type: "Point",
       coordinates: normalizeCoordinates(body),
@@ -136,7 +140,17 @@ const buildRestaurantPayload = (body, user) => {
 };
 
 const buildRestaurantUpdatePayload = (body) => {
-  const payload = { ...body };
+  const allowedFields = [
+    "name", "description", "image", "cuisine", "tags", "address",
+    "phone", "openingHours", "minimumOrderAmount", "status",
+  ];
+
+  const payload = {};
+  for (const field of allowedFields) {
+    if (body[field] !== undefined) {
+      payload[field] = body[field];
+    }
+  }
 
   if (body.cuisine !== undefined) {
     payload.cuisine = normalizeCuisine(body.cuisine);
@@ -151,7 +165,6 @@ const buildRestaurantUpdatePayload = (body) => {
       type: "Point",
       coordinates: normalizeCoordinates(body, undefined),
     };
-    delete payload.coordinates;
   }
 
   return payload;
