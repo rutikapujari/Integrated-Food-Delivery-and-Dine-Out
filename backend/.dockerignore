@@ -1,0 +1,16 @@
+node_modules
+npm-debug.log
+.env
+.env.*
+!.env.example
+dist
+build
+.git
+.gitignore
+.git.*-backup/
+.opencode
+__tests__
+*.test.js
+jest.config.js
+.vscode
+.idea
