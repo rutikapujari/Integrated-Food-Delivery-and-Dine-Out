@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { pageTransition } from '../utils/motion'
 import { menuService } from '../services/menuService'
+import { uploadService } from '../services/uploadService'
 import { notify } from '../utils/toast'
 import { Plus, Trash, Pencil, ForkKnife, ArrowLeft } from '../utils/icons'
 import Button from '../components/common/Button'
@@ -22,6 +23,26 @@ function RestaurantMenuManagePage() {
   const [editItem, setEditItem] = useState(null)
   const [editLoading, setEditLoading] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [uploading, setUploading] = useState(false)
+
+  const handleImageFile = async (file, target) => {
+    if (!file) return
+    setUploading(true)
+    try {
+      const url = await uploadService.uploadImage(file, 'menu')
+      if (url) {
+        if (target === 'new') setForm({ ...form, image: url })
+        else setEditItem({ ...editItem, image: url })
+        notify.success('Image uploaded')
+      } else {
+        notify.error('Upload failed')
+      }
+    } catch {
+      notify.error('Failed to upload image')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const categories = [...new Set(items.map((i) => i.category).filter(Boolean))]
 
@@ -169,12 +190,17 @@ function RestaurantMenuManagePage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Image URL</label>
+                <label className="text-xs font-semibold text-muted-foreground">Image</label>
+                {form.image ? (
+                  <img src={form.image} alt="" className="h-20 w-20 rounded-lg object-cover" />
+                ) : null}
+                <input type="file" accept="image/*" onChange={(e) => handleImageFile(e.target.files?.[0], 'new')} disabled={uploading} className="text-sm" />
+                {uploading && <span className="text-xs text-muted-foreground">Uploading…</span>}
                 <input
                   type="text"
                   value={form.image}
                   onChange={(e) => setForm({ ...form, image: e.target.value })}
-                  placeholder="https://..."
+                  placeholder="Or paste image URL"
                   className="h-10 px-3 rounded-lg border border-border text-sm bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
                 />
               </div>
@@ -297,7 +323,12 @@ function RestaurantMenuManagePage() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold">Image URL</label>
+              <label className="text-sm font-semibold">Image</label>
+              {editItem.image ? (
+                <img src={editItem.image} alt="" className="h-20 w-20 rounded-lg object-cover" />
+              ) : null}
+              <input type="file" accept="image/*" onChange={(e) => handleImageFile(e.target.files?.[0], 'edit')} disabled={uploading} className="text-sm" />
+              {uploading && <span className="text-xs text-muted-foreground">Uploading…</span>}
               <input
                 type="text"
                 value={editItem.image}
