@@ -87,9 +87,6 @@ function LoginPage() {
           <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-primary block">
             Forgot Password?
           </Link>
-          <Link to="/courier/login" className="text-sm text-muted-foreground hover:text-primary block">
-            Are you a delivery partner? <span className="text-primary font-semibold">Courier Sign In</span>
-          </Link>
         </div>
       </div>
     </div>
