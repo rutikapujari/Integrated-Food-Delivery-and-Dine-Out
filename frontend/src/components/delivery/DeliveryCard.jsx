@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { formatCurrency } from '../../utils/formatCurrency'
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '../../utils/constants'
@@ -20,27 +21,47 @@ const statusColorClass = {
 
 function DeliveryCard({ order, mode = 'mine' }) {
   const dispatch = useDispatch()
+  const [loadingAction, setLoadingAction] = useState(null)
 
   const statusLabel = ORDER_STATUS_LABELS[order.status] || order.status
   const colorKey = ORDER_STATUS_COLORS[order.status] || 'accent'
 
   const handleStatus = async (status) => {
-    const result = await dispatch(updateDeliveryStatus({ orderId: order._id, status }))
-    if (updateDeliveryStatus.fulfilled.match(result)) {
-      notify.success(`Marked as ${ORDER_STATUS_LABELS[status]}`)
-    } else {
-      notify.error(result.payload || 'Failed to update status')
+    setLoadingAction(status)
+    try {
+      const result = await dispatch(updateDeliveryStatus({ orderId: order._id, status }))
+      if (updateDeliveryStatus.fulfilled.match(result)) {
+        notify.success(`Marked as ${ORDER_STATUS_LABELS[status]}`)
+      } else {
+        notify.error(result.payload || 'Failed to update status')
+      }
+    } finally {
+      setLoadingAction(null)
     }
   }
 
   const handleCollect = async () => {
-    const result = await dispatch(
-      updateDeliveryPayment({ orderId: order._id, paymentStatus: 'Paid' })
-    )
-    if (updateDeliveryPayment.fulfilled.match(result)) {
-      notify.success('Cash on Delivery collected')
-    } else {
-      notify.error(result.payload || 'Failed to collect payment')
+    setLoadingAction('collect')
+    try {
+      const result = await dispatch(
+        updateDeliveryPayment({ orderId: order._id, paymentStatus: 'Paid' })
+      )
+      if (updateDeliveryPayment.fulfilled.match(result)) {
+        notify.success('Cash on Delivery collected')
+      } else {
+        notify.error(result.payload || 'Failed to collect payment')
+      }
+    } finally {
+      setLoadingAction(null)
+    }
+  }
+
+  const handleClaim = async () => {
+    setLoadingAction('claim')
+    try {
+      await dispatch(claimDelivery(order._id))
+    } finally {
+      setLoadingAction(null)
     }
   }
 
@@ -82,24 +103,25 @@ function DeliveryCard({ order, mode = 'mine' }) {
       {mode === 'available' ? (
         <Button
           className="w-full"
-          onClick={() => dispatch(claimDelivery(order._id))}
+          loading={loadingAction === 'claim'}
+          onClick={handleClaim}
         >
           <Truck className="w-5 h-5" /> Claim Delivery
         </Button>
       ) : (
         <div className="flex flex-wrap gap-2">
           {order.status === 'confirmed' || order.status === 'preparing' ? (
-            <Button size="sm" onClick={() => handleStatus('out_for_delivery')}>
+            <Button size="sm" loading={loadingAction === 'out_for_delivery'} onClick={() => handleStatus('out_for_delivery')}>
               <Truck className="w-4 h-4" /> Out for Delivery
             </Button>
           ) : null}
           {order.status === 'out_for_delivery' ? (
-            <Button size="sm" onClick={() => handleStatus('delivered')}>
+            <Button size="sm" loading={loadingAction === 'delivered'} onClick={() => handleStatus('delivered')}>
               <CheckCircle className="w-4 h-4" /> Mark Delivered
             </Button>
           ) : null}
           {order.paymentMethod === 'Cash on Delivery' && order.paymentStatus !== 'Paid' && order.status === 'delivered' ? (
-            <Button size="sm" variant="outline" onClick={handleCollect}>
+            <Button size="sm" variant="outline" loading={loadingAction === 'collect'} onClick={handleCollect}>
               <CurrencyDollar className="w-4 h-4" /> Collect Cash
             </Button>
           ) : null}

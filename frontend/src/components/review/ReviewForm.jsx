@@ -16,6 +16,7 @@ const reviewSchema = z.object({
 function ReviewForm({ restaurantId, orderId }) {
   const dispatch = useDispatch()
   const [rating, setRating] = useState(0)
+  const [submitting, setSubmitting] = useState(false)
 
   const {
     register,
@@ -29,19 +30,24 @@ function ReviewForm({ restaurantId, orderId }) {
   })
 
   const onSubmit = async (data) => {
-    const result = await dispatch(createReview({
-      restaurantId,
-      orderId,
-      rating: data.rating,
-      comment: data.comment,
-    }))
+    setSubmitting(true)
+    try {
+      const result = await dispatch(createReview({
+        restaurantId,
+        orderId,
+        rating: data.rating,
+        comment: data.comment,
+      }))
 
-    if (createReview.fulfilled.match(result)) {
-      notify.success('Review submitted!')
-      reset()
-      setRating(0)
-    } else {
-      notify.error(result.payload || 'Failed to submit review')
+      if (createReview.fulfilled.match(result)) {
+        notify.success('Review submitted!')
+        reset()
+        setRating(0)
+      } else {
+        notify.error(result.payload || 'Failed to submit review')
+      }
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -69,7 +75,7 @@ function ReviewForm({ restaurantId, orderId }) {
         {errors.comment && <p className="text-sm text-destructive">{errors.comment.message}</p>}
       </div>
 
-      <Button type="submit">Submit Review</Button>
+      <Button type="submit" loading={submitting}>Submit Review</Button>
     </form>
   )
 }

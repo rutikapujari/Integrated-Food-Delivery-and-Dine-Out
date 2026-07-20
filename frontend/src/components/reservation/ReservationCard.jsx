@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Calendar, Clock, Users, Note, MapPin } from '../../utils/icons'
 
 const STATUS_STYLES = {
@@ -8,6 +9,7 @@ const STATUS_STYLES = {
 }
 
 function ReservationCard({ reservation, onCancel }) {
+  const [cancelling, setCancelling] = useState(false)
   const restaurantName = reservation.restaurantId?.name || reservation.restaurantName || 'Restaurant'
   const restaurantAddress = reservation.restaurantId?.address || ''
   const isCancellable = reservation.status === 'Pending' || reservation.status === 'Confirmed'
@@ -65,10 +67,18 @@ function ReservationCard({ reservation, onCancel }) {
         {isCancellable && onCancel && (
           <div className="mt-4 pt-3 border-t border-border">
             <button
-              onClick={() => onCancel(reservation._id)}
-              className="text-sm font-semibold text-destructive hover:text-destructive-hover transition-colors"
+              disabled={cancelling}
+              onClick={async () => {
+                setCancelling(true)
+                try {
+                  await onCancel(reservation._id)
+                } finally {
+                  setCancelling(false)
+                }
+              }}
+              className="text-sm font-semibold text-destructive hover:text-destructive-hover transition-colors disabled:opacity-50"
             >
-              Cancel Reservation
+              {cancelling ? 'Cancelling...' : 'Cancel Reservation'}
             </button>
           </div>
         )}
