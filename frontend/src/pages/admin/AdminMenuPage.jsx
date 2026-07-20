@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { adminService } from '../../services/adminService'
 import { menuService } from '../../services/menuService'
+import { uploadService } from '../../services/uploadService'
 import { notify } from '../../utils/toast'
 import { Plus, Trash, Pencil, ForkKnife } from '../../utils/icons'
 import Pagination from '../../components/common/Pagination'
@@ -25,6 +26,26 @@ function AdminMenuPage() {
 
   const [editItem, setEditItem] = useState(null)
   const [editLoading, setEditLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+
+  const handleImageFile = async (file, target) => {
+    if (!file) return
+    setUploading(true)
+    try {
+      const url = await uploadService.uploadImage(file, 'menu')
+      if (url) {
+        if (target === 'new') setNewItem({ ...newItem, image: url })
+        else setEditItem({ ...editItem, image: url })
+        notify.success('Image uploaded')
+      } else {
+        notify.error('Upload failed')
+      }
+    } catch {
+      notify.error('Failed to upload image')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   useEffect(() => {
     adminService.getRestaurants({ limit: 100 })
@@ -274,8 +295,13 @@ function AdminMenuPage() {
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-bold text-gray-700">Image URL</label>
-            <input type="text" value={newItem.image} onChange={(e) => setNewItem({ ...newItem, image: e.target.value })} placeholder="https://..."
+            <label className="text-sm font-bold text-gray-700">Image</label>
+            {newItem.image ? (
+              <img src={newItem.image} alt="" className="h-24 w-24 rounded-xl object-cover" />
+            ) : null}
+            <input type="file" accept="image/*" onChange={(e) => handleImageFile(e.target.files?.[0], 'new')} disabled={uploading} className="text-sm" />
+            {uploading && <span className="text-xs text-gray-400">Uploading…</span>}
+            <input type="text" value={newItem.image} onChange={(e) => setNewItem({ ...newItem, image: e.target.value })} placeholder="Or paste image URL"
               className="h-10 px-3 rounded-xl border border-gray-200 text-sm focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/20 focus:outline-none" />
           </div>
         </div>
@@ -323,7 +349,12 @@ function AdminMenuPage() {
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-bold text-gray-700">Image URL</label>
+              <label className="text-sm font-bold text-gray-700">Image</label>
+              {editItem.image ? (
+                <img src={editItem.image} alt="" className="h-24 w-24 rounded-xl object-cover" />
+              ) : null}
+              <input type="file" accept="image/*" onChange={(e) => handleImageFile(e.target.files?.[0], 'edit')} disabled={uploading} className="text-sm" />
+              {uploading && <span className="text-xs text-gray-400">Uploading…</span>}
               <input type="text" value={editItem.image} onChange={(e) => setEditItem({ ...editItem, image: e.target.value })}
                 className="h-10 px-3 rounded-xl border border-gray-200 text-sm focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/20 focus:outline-none" />
             </div>
